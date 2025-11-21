@@ -1,4 +1,4 @@
-function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model::Any = nothing)
+function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model = nothing)
     nlines = caseData["nlines"]
     Stage = caseData["Stage"]
     caseData["v_line_node"] = line_node(caseData)
@@ -32,13 +32,13 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model:
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)
     
     timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
-    #wid = myid()                        # ID del worker → 2,3,4,...
+    wid = Distributed.myid()                        # ID del worker → 2,3,4,...
     #uid = string(UUIDs.uuid4())[1:8]    # 8 caracteres aleatorios
 
     folder = get_experiment_folder(timeGlobal, base="test")
 
     filename = joinpath(folder,
-                        "resultados_$(nepi)_$(timestamp)_$(myid()).bson")
+                        "resultados_$(nepi)_$(timestamp)_$(wid).bson")
 
     open(joinpath(folder, "PruebasREINFORCE.txt"), "a") do io
         println(io, basename(filename))
@@ -103,7 +103,7 @@ function correr_experimentos_seleccionado(experimentos, p1, p2, p3, p4, p5, p6, 
     end
 end
 
-function wrapper(parametros_test, semilla, caseStudyData, timeGlobal; policy::Any=nothing)
+function wrapper(parametros_test, semilla, caseStudyData, timeGlobal; policy=nothing)
     Random.seed!(semilla)
     evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, policy_model = policy)
 end
