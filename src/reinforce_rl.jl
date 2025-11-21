@@ -327,6 +327,8 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 append!(buffer_ventajas, mejor_trayectoria[4])
             end
             # Calcula baseline común
+            recompensa_promedio = mean(buffer_retornos)
+            ventajas = buffer_retornos .- copy(recompensa_promedio)
 
             loss_fn(policy_model) = begin
                 entradas = [hcat(s...) for s in buffer_estados]
@@ -349,7 +351,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                     for logits in logits_list
                 ]
 
-                reinforce_loss = -mean(log_probs .* buffer_ventajas)
+                reinforce_loss = -mean(log_probs .* ventajas)
                 entropy_bonus  =  mean(entropies)
 
                 return reinforce_loss - β * entropy_bonus
