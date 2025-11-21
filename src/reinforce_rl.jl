@@ -214,7 +214,7 @@ function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, n
 
     mask_norm = mask / sum(mask)
     if stocas
-        accion_idx = StatsBase.sample(1:length(mask_norm), Weights(mask_norm))
+        accion_idx = StatsBase.sample(1:length(mask_norm), StatsBase.Weights(mask_norm))
     else
         accion_idx = argmax(mask_norm)
     end

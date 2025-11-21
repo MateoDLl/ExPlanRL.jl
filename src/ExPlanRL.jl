@@ -2,7 +2,7 @@ module ExPlanRL
 
 import Distributed
 import Random, ACOPF_Extensions, StatsBase, Dates
-using Flux
+import Flux
 import BSON: @save, @load
 import Plots, Colors,LaTeXStrings
 
