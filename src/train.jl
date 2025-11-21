@@ -173,7 +173,7 @@ function cargar_modelos(path_archivo, vec_id)
                 @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios
                 push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
                 push!(vec_VFO, VFO)
-                plot_perd_reward(perdidas_por_batch, recompensas_episodios, VFO, id, folder)
+                plot_with_tendency(perdidas_por_batch, recompensas_episodios, VFO, id, folder)
             end
         end
     end
