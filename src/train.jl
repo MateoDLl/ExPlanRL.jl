@@ -248,7 +248,7 @@ function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingen
         end
 
         push!(vectorRes, (v1, v2, v3, round(valor, digits=2),
-                          round(time_test, digits=2), top, valido, id))
+                          round(time_test, digits=2), top, valido, id, sis_train[2]))
     end
 
     return vectorRes
