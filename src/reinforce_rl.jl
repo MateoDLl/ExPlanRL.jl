@@ -196,7 +196,7 @@ end
 # --- Función para seleccionar acción por muestreo de distribución ---
 function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, nlines;stocas::Bool=true)
     q_input = hcat(estado...)  # Estado en columnas
-    probs = softmax(vec(policy_model(q_input)))  # Probabilidades por acción
+    probs = NNlib.softmax(vec(policy_model(q_input)))  # Probabilidades por acción
     # Filtrar solo acciones disponibles y normalizar
     mask = zeros(Float32, length(probs))
     for a in acciones_disponibles
@@ -239,8 +239,8 @@ function kl_policy(model_new, model_best, estado)
     logits_new = vec(model_new(estado))
     logits_best = vec(model_best(estado))
 
-    p = softmax(logits_new)
-    q = softmax(logits_best)
+    p = NNlib.softmax(logits_new)
+    q = NNlib.softmax(logits_best)
 
     return sum(p .* (log.(p .+ 1e-12) .- log.(q .+ 1e-12)))
 end
@@ -343,7 +343,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 # 3. Entropía usando softmax
                 entropies = [
                     begin
-                        p = softmax(logits)
+                        p = NNlib.softmax(logits)
                         -sum(p .* log.(p .+ 1e-12))
                     end
                     for logits in logits_list
@@ -463,7 +463,7 @@ function entrenar_reinforce_batch!(num_episodios, entorno, policy_model, opt, ba
 
                 entropies = [
                     begin
-                        p = softmax(vec(policy_model(entrada)))
+                        p = NNlib.softmax(vec(policy_model(entrada)))
                         -sum(p .* log.(p .+ 1e-8))
                     end
                     for entrada in entradas
@@ -494,7 +494,7 @@ function entrenar_reinforce_batch!(num_episodios, entorno, policy_model, opt, ba
 
             entropies = [
                 begin
-                    p = softmax(vec(policy_model(entrada)))
+                    p = NNlib.softmax(vec(policy_model(entrada)))
                     -sum(p .* log.(p .+ 1e-8))
                 end
                 for entrada in entradas
@@ -553,7 +553,7 @@ function entrenar_reinforce!(num_episodios, entorno, policy_model, opt, batch, �
 
             entropies = [
                 begin
-                    p = softmax(vec(policy_model(entrada)))
+                    p = NNlib.softmax(vec(policy_model(entrada)))
                     -sum(p .* log.(p .+ 1e-8))
                 end
                 for entrada in entradas
@@ -615,7 +615,7 @@ function entrenar_reinforce_baseline!(num_episodios, entorno, policy_model, opt,
 
             entropies = [
                 begin
-                    p = softmax(vec(policy_model(entrada)))
+                    p = NNlib.softmax(vec(policy_model(entrada)))
                     -sum(p .* log.(p .+ 1e-8))
                 end
                 for entrada in entradas
