@@ -2,10 +2,10 @@ module ExPlanRL
 
 import Distributed
 import Random, ACOPF_Extensions, Dates
-import StatsBase: mean
+import StatsBase: mean, sample, Weights
 import Flux, NNlib
 import BSON: @save, @load
-import Plots, Colors,LaTeXStrings
+import Plots, Colors, LaTeXStrings
 
 export run_rl_reinforce_train, run_evaluation
 
