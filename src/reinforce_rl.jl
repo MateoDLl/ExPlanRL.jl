@@ -654,6 +654,9 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
         if length(acciones_disp) == 0
             terminado = true
         end
+        if accion in acciones_disp
+            deleteat!(acciones_disp, findfirst(==(accion), acciones_disp))
+        end
         # if length(acciones_disp)/size(entorno.topologia,2) > 100
         #     if accion in acciones_disp
         #         deleteat!(acciones_disp, findfirst(==(accion), acciones_disp))
