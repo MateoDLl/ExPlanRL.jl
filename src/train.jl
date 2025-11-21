@@ -291,7 +291,7 @@ function run_evaluation(path_pruebas::String,
     println("=== Ejecutando evaluación sobre sistemas ===")
 
     # Usando pmap
-    vector_total = pmap((sis_train, id) -> evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens, 
+    vector_total = Distributed.pmap((sis_train, id) -> evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens, 
         stage=stage, grate=grate, drate = drate, yearst=yearst),
                     vec_results, vec_id)
     # vector_total = evaluar_sistemas(
