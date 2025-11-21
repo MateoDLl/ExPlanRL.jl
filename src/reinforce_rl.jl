@@ -667,6 +667,6 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
         # end
         #println("  FO: $(accion)")
     end
-    @info("Costo: $(entorno.actual_FO)") 
+    #@info("Costo: $(entorno.actual_FO)") 
     return entorno.actual_FO, entorno.topologia
 end
