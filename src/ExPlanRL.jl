@@ -14,5 +14,6 @@ ACOPF_Extensions.silence_acopf_logs()
 include("functions.jl")
 include("reinforce_rl.jl")
 include("train.jl")
+include("fig.jl")
 
 end
