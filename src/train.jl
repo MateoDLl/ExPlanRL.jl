@@ -103,7 +103,7 @@ function correr_experimentos_seleccionado(experimentos, p1, p2, p3, p4, p5, p6, 
     end
 end
 
-@everywhere function wrapper(parametros_test, semilla, caseStudyData, timeGlobal; policy::Any=nothing)
+function wrapper(parametros_test, semilla, caseStudyData, timeGlobal; policy::Any=nothing)
     Random.seed!(semilla)
     evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, policy_model = policy)
 end
@@ -132,7 +132,7 @@ function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData)
     
 end 
 
-@everywhere function wrapper_pmap(args)
+function wrapper_pmap(args)
     parametros_test, semilla, policy_model = args
     return wrapper(parametros_test, semilla, caseStudyData, timeGlobal, policy = policy_model)
 end
@@ -179,7 +179,7 @@ function cargar_modelos(path_archivo, vec_id)
                 @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios
                 push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
                 push!(vec_VFO, VFO)
-                #plot_perd_reward(perdidas_por_batch, recompensas_episodios, VFO, id, folder)
+                plot_perd_reward(perdidas_por_batch, recompensas_episodios, VFO, id, folder)
             end
         end
     end
@@ -227,7 +227,7 @@ function evaluar_sistemas(vec_results, vec_id, sistemas, react_comps, contingens
 end
 
 # Para que las funciones y variables necesarias estén disponibles en todos los workers
-@everywhere function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens;
+function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens;
                                              stage::Int=1, grate::Float64=20.0,
                                              drate::Float64=10.0, yearst::Int=1)
     vectorRes = []
