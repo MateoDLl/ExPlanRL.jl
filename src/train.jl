@@ -16,8 +16,8 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model 
     hidden2 = 32
     if isnothing(policy_model)
         policy_model_0 = Flux.Chain(
-            Flux.Dense(12, hidden1, relu),
-            Flux.Dense(hidden1, hidden2, relu),
+            Flux.Dense(12, hidden1, NNlib.relu),
+            Flux.Dense(hidden1, hidden2, NNlib.relu),
             Flux.Dense(hidden2, 1)  # un Q-valor por candidato
         )
     else
