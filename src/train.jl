@@ -31,7 +31,7 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model:
     timeTrain = @elapsed policy_model = entrenar_reinforce_batch_baseline!(nepi, entorno, policy_model_0, opt, frecuencia, γ, β, perdidas_por_batch, recompensas_episodios,caseData)
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)
     
-    timestamp = Dates.format(now(), "yyyy-mm-dd_HHMMSS")
+    timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
     #wid = myid()                        # ID del worker → 2,3,4,...
     #uid = string(UUIDs.uuid4())[1:8]    # 8 caracteres aleatorios
 
@@ -112,7 +112,7 @@ end
 function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData)
     seed = 1000
     trabajos = []
-    timeGlobal = Dates.format(now(), "yyyy-mm-dd_HHMMSS")
+    timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
     combo_id = 0
     for (v1, v2, v3, v4, v5, v6, v7) in Iterators.product(p1, p2, p3, p4, p5, p6, p7)
         for rep in 1:1
