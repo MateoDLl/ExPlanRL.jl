@@ -122,12 +122,8 @@ function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData)
         end
         combo_id += 1
     end
-
-    # Distributed.pmap((parametros_test, semilla) -> 
-    #         wrapper(parametros_test, semilla, caseStudyData, timeGlobal),trabajos)
-    
-    Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model) 
-        wrapper(parametros_test, semilla, caseStudyData, timeGlobal, policy = policy_model)
+    Distributed.pmap(trabajos) do (parametros_test, semilla) 
+        wrapper(parametros_test, semilla, caseStudyData, timeGlobal)
     end
     
 end 
@@ -152,8 +148,6 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData)
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model)
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, policy = policy_model)
     end
-    # Distributed.pmap((parametros_test, semilla, policy_model) -> 
-    #                 wrapper(parametros_test, semilla, caseStudyData, timeGlobal, policy = policy_model), trabajos)
 end  
 
 function evaluar_parametros(params, policy_model, nlines, Stage, caseStudyData)
