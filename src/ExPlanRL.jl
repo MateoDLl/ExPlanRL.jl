@@ -8,6 +8,8 @@ import Plots, Colors,LaTeXStrings
 
 export run_rl_reinforce_train, run_evaluation
 
+ACOPF_Extensions.silence_acopf_logs()
+
 include("functions.jl")
 include("reinforce_rl.jl")
 include("train.jl")
