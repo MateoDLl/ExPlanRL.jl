@@ -1,7 +1,7 @@
 function plot_perd_reward(perdidas, recompensas, VFO, id, path)
     
     strVFO = string(id)*"_"*string(round(Int,VFO[1]))
-    figurevar = plot(perdidas, 
+    figurevar = Plots.plot(perdidas, 
         xlabel = "Batch",
         ylabel = "Losses",
         title = LaTeXStrings.LaTeXString("Trainig\\\\  Net $id \\\\"),
@@ -10,9 +10,9 @@ function plot_perd_reward(perdidas, recompensas, VFO, id, path)
         color = :red,
         grid = false,
     )
-    savefig(figurevar, path*"_var_"*strVFO*"_.png")
+    Plots.savefig(figurevar, path*"_var_"*strVFO*"_.png")
 
-    figurerew = plot(recompensas, 
+    figurerew = Plots.plot(recompensas, 
         xlabel = "Episode",
         ylabel = "Reward",
         title = LaTeXStrings.LaTeXString("Trainig\\\\  Net $id \\\\"),
@@ -21,5 +21,5 @@ function plot_perd_reward(perdidas, recompensas, VFO, id, path)
         color = :green,
         grid = false,
     )
-    savefig(figurerew, path*"_rew_"*strVFO*"_.png")
+    Plots.savefig(figurerew, path*"_rew_"*strVFO*"_.png")
 end
