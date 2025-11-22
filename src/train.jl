@@ -135,7 +135,7 @@ end
 
 function correr_experimentos_trained_pmap(path_archivo, caseStudyData)
     trabajos = []
-    timeGlobal = Dates.format(now(), "yyyy-mm-dd_HHMMSS")
+    timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
 
     folder = dirname(path_archivo)
 
