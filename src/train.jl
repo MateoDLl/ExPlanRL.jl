@@ -301,12 +301,12 @@ function run_evaluation(path_pruebas::String,
     #     react_comps,
     #     contingens,
     # )
-    if react_comps
+    if true in react_comps
         st_rc = "_RC"
     else
         st_rc = ""
     end
-    if contingens
+    if true in contingens
         st_ctg = "N1"
     else
         st_ctg = ""
