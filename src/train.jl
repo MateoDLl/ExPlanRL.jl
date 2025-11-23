@@ -301,9 +301,24 @@ function run_evaluation(path_pruebas::String,
     #     react_comps,
     #     contingens,
     # )
+    if react_comps
+        st_rc = "_RC"
+    else
+        st_rc = ""
+    end
+    if contingens
+        st_ctg = "N1"
+    else
+        st_ctg = ""
+    end
+    if stage > 1
+        st_stg = "multi$(stage)"
+    else
+        st_stg = "stc"
+    end
 
     println("=== Guardando resultados en: $path_salida ===")
-    @save joinpath(dirname(path_pruebas),path_salida) vector_total
+    @save joinpath(dirname(path_pruebas),path_salida*st_rc*st_stg*st_stg) vector_total
 
     return vector_total
 end
