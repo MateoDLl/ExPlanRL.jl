@@ -318,7 +318,7 @@ function run_evaluation(path_pruebas::String,
     end
 
     println("=== Guardando resultados en: $path_salida ===")
-    @save joinpath(dirname(path_pruebas),path_salida*st_rc*st_stg*st_stg) vector_total
+    @save joinpath(dirname(path_pruebas),path_salida*st_rc*st_stg*st_stg*".bson") vector_total
 
     return vector_total
 end
