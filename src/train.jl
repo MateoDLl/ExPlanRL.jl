@@ -294,31 +294,15 @@ function run_evaluation(path_pruebas::String,
     vector_total = Distributed.pmap((sis_train, id) -> evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens, 
         stage=stage, grate=grate, drate = drate, yearst=yearst),
                     vec_results, vec_id)
-    # vector_total = evaluar_sistemas(
-    #     vec_results,
-    #     vec_id,
-    #     sistemas,
-    #     react_comps,
-    #     contingens,
-    # )
-    if true in react_comps
-        st_rc = "_RC"
-    else
-        st_rc = ""
-    end
-    if true in contingens
-        st_ctg = "N1"
-    else
-        st_ctg = ""
-    end
-    if stage > 1
-        st_stg = "multi$(stage)"
-    else
-        st_stg = "stc"
-    end
 
-    println("=== Guardando resultados en: $path_salida ===")
-    @save joinpath(dirname(path_pruebas),path_salida*st_rc*st_ctg*st_stg*".bson") vector_total
+    st_rc  = any(react_comps)  ? "_RC" : ""
+    st_ctg = any(contingens)   ? "N1"  : ""
+    st_stg = stage > 1 ? "multi$(stage)" : "stc"
+
+    path = joinpath(dirname(path_pruebas), "$(path_salida)$(st_rc)$(st_ctg)$(st_stg).bson")
+
+    println("=== Guardando resultados en: $path ===")
+    @save path vector_total
 
     return vector_total
 end
