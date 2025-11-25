@@ -150,12 +150,12 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData)
     end
 end  
 
-function evaluar_parametros(params, policy_model, nlines, Stage, caseStudyData)
+function evaluar_parametros(params, policy_model, nlines, Stage, caseStudyData; sel=false)
     vk = round(Int,params[1])
     vs = round(Int,params[2])
     
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseStudyData)
-    VFO, top = evaluar_red_reinforce(policy_model, entorno, caseStudyData)  
+    VFO, top = evaluar_red_reinforce(policy_model, entorno, caseStudyData, stocástico = sel)  
     return VFO, top
 end
 
@@ -183,7 +183,7 @@ end
 
 function evaluar_sistemas(vec_results, vec_id, sistemas, react_comps, contingens;
                             stage::Int = 1, grate::Float64 = 20.0,
-                                  drate::Float64 = 10.0, yearst::Int = 1)
+                                  drate::Float64 = 10.0, yearst::Int = 1, sel = false)
     vector_total = []
 
     for (i, sis_train) in enumerate(vec_results)
@@ -202,6 +202,7 @@ function evaluar_sistemas(vec_results, vec_id, sistemas, react_comps, contingens
                 nlines,
                 stage,
                 caseStudyData,
+                sel = sel
             )
 
             valido = true
@@ -223,7 +224,7 @@ end
 # Para que las funciones y variables necesarias estén disponibles en todos los workers
 function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens;
                                              stage::Int=1, grate::Float64=20.0,
-                                             drate::Float64=10.0, yearst::Int=1)
+                                             drate::Float64=10.0, yearst::Int=1, sel = false)
     vectorRes = []
 
     for (v1, v2, v3) in Iterators.product(sistemas, react_comps, contingens)
@@ -239,6 +240,7 @@ function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingen
             nlines,
             stage,
             caseStudyData,
+            sel = sel
         )
 
         valido = true
@@ -273,7 +275,7 @@ function run_evaluation(path_pruebas::String,
                                   contingens;
                                   vec_id = nothing, 
                                   stage::Int = 1, grate::Float64 = 20.0,
-                                  drate::Float64 = 10.0, yearst::Int = 1)
+                                  drate::Float64 = 10.0, yearst::Int = 1, select = false)
 
     println("=== Cargando modelos REINFORCE ===")
     # Si no se pasa vec_id → usar todos los índices del archivo
@@ -292,7 +294,7 @@ function run_evaluation(path_pruebas::String,
 
     # Usando pmap
     vector_total = Distributed.pmap((sis_train, id) -> evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens, 
-        stage=stage, grate=grate, drate = drate, yearst=yearst),
+        stage=stage, grate=grate, drate = drate, yearst=yearst, sel = select),
                     vec_results, vec_id)
 
     st_rc  = any(react_comps)  ? "_RC" : ""

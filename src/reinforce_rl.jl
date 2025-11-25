@@ -408,7 +408,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                     #     end
                     # end
                 end
-                if no_improve > 5
+                if no_improve > batch_size/2
                     policy_model = deepcopy(best_model)
                     no_improve = 0
                 end
