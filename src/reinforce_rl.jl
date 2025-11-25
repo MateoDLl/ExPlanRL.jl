@@ -275,6 +275,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
     val_fo = Float32[]
     best_val_fo = Inf
     best_model = deepcopy(policy_model) 
+    no_improve = 0
 
     while episodio < num_episodios
         estado = reset!(entorno, caseStudyData)
@@ -394,16 +395,22 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 if fo <= best_val_fo
                     best_val_fo = fo
                     best_model = deepcopy(policy_model)
+                    no_improve = 0
                 else
+                    no_improve += 1
                     # seleccionar algunos estados del buffer
-                    if length(buffer_estados) >= 5
-                        estados_muestra = buffer_estados[end-4:end]
-                        kl = kl_batch(policy_model, best_model, estados_muestra)
-                        kl_umbral = 0.005  
-                        if kl > kl_umbral
-                            policy_model = deepcopy(best_model)
-                        end
-                    end
+                    # if length(buffer_estados) >= 5
+                    #     estados_muestra = buffer_estados[end-4:end]
+                    #     kl = kl_batch(policy_model, best_model, estados_muestra)
+                    #     kl_umbral = 0.005  
+                    #     if kl > kl_umbral
+                    #         policy_model = deepcopy(best_model)
+                    #     end
+                    # end
+                end
+                if no_improve > 5
+                    policy_model = deepcopy(best_model)
+                    no_improve = 0
                 end
             end
         end
