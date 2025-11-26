@@ -1,11 +1,10 @@
-using ExPlanRL
-using Test
-using BSON: @load
+import ExPlanRL
+import Test
+import BSON: @load
 
 @testset "ExPlanRL.jl" begin
-    # Write your tests here.
     system = joinpath(@__DIR__,"..", "case", "garverQ")
-    BSON.@load "resultados_500_2025-11-25_171102_3.bson" vector_total
+    @load "resultados_500_2025-11-25_171102_3.bson" vector_total
 
     @testset "evaluar_sistemas: interface tests" begin
         
