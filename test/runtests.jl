@@ -1,6 +1,6 @@
-import ExPlanRL
-import Test
-import BSON: @load
+using ExPlanRL
+using Test
+using BSON: @load
 
 @testset "ExPlanRL.jl" begin
     system = joinpath(@__DIR__,"..", "case", "garverQ")
