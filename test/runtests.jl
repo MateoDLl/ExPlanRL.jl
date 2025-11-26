@@ -1,5 +1,6 @@
 using ExPlanRL
 using Test
+using BSON: @load
 
 @testset "ExPlanRL.jl" begin
     # Write your tests here.
