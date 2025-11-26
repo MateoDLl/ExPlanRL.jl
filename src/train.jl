@@ -181,7 +181,7 @@ function cargar_modelos(path_archivo, vec_id)
     return vec_names, vec_results, vec_VFO
 end
 
-function evaluar_sistemas(vec_results, vec_id, sistemas, react_comps, contingens;
+function evaluar_sistemas(vec_results, sistemas, react_comps, contingens;
                             stage::Int = 1, grate::Float64 = 20.0,
                                   drate::Float64 = 10.0, yearst::Int = 1, sel = false)
     vector_total = []
@@ -190,7 +190,7 @@ function evaluar_sistemas(vec_results, vec_id, sistemas, react_comps, contingens
         vectorRes = []
 
         for (v1, v2, v3) in Iterators.product(sistemas, react_comps, contingens)
-            println("Sistema:$v1, RC:$v2, Ctg:$v3")
+            #println("Sistema:$v1, RC:$v2, Ctg:$v3")
             caseStudyData = prepare_case(v1, v2, v3, 
                                         stage=stage, grate=grate, drate=drate, yearst= yearst)
             nlines = caseStudyData["nlines"]
@@ -212,7 +212,7 @@ function evaluar_sistemas(vec_results, vec_id, sistemas, react_comps, contingens
             end
 
             push!(vectorRes, (v1, v2, v3, round(valor, digits=2),
-                              round(time_test, digits=2), top, valido, vec_id[i]))
+                              round(time_test, digits=2), top, valido))
         end
 
         push!(vector_total, vectorRes)
@@ -263,7 +263,9 @@ end
                              sistemas = ["garverQ", "case24IEEE_P_Glo_r", "case118_cost_R_D_r"],
                              react_comps = [false, true],
                              contingens = [false];
-                             vec_id = nothing)
+                             vec_id = nothing,
+                             stage::Int = 1, grate::Float64 = 20.0,
+                             drate::Float64 = 10.0, yearst::Int = 1, select = false)
 
 Ejecuta la evaluación REINFORCE sobre múltiples sistemas eléctricos.
 - Devuelve `vector_total` y también guarda los resultados en `path_salida`.
