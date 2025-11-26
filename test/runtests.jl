@@ -4,7 +4,7 @@ using BSON: @load
 
 @testset "ExPlanRL.jl" begin
     system = joinpath(@__DIR__,"..", "case", "garverQ")
-    @load "resultados_500_2025-11-25_171102_3.bson" vector_total
+    @load joinpath(@__DIR__,"..","test" ,"resultados_500_2025-11-25_171102_3.bson") vector_total
 
     @testset "evaluar_sistemas: interface tests" begin
         
