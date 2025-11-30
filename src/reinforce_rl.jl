@@ -334,16 +334,16 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             loss_fn(policy_model) = begin
                 entradas = [hcat(s...) for s in buffer_estados]
 
-                # 1. Forward único por estado
+                # Forward único por estado
                 logits_list = [vec(policy_model(entrada)) for entrada in entradas]
 
-                # 2. Log-probs usando logsoftmax
+                # Log-probs usando logsoftmax
                 log_probs = [
                     Flux.Losses.logsoftmax(logits)[accion_idx]
                     for (logits, accion_idx) in zip(logits_list, buffer_acciones)
                 ]
 
-                # 3. Entropía usando softmax
+                # Entropía usando softmax
                 entropies = [
                     begin
                         p = NNlib.softmax(logits)
@@ -390,7 +390,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 end
             end
 
-            if episodio > 0.2*num_episodios
+            if episodio > 0.2*num_episodios # Evitar resultados iniciales afortunados
                 # --- Guardar mejor modelo ---
                 if fo <= best_val_fo
                     best_val_fo = fo
@@ -399,19 +399,19 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 else
                     no_improve += 1
                     # seleccionar algunos estados del buffer
-                    # if length(buffer_estados) >= 5
-                    #     estados_muestra = buffer_estados[end-4:end]
-                    #     kl = kl_batch(policy_model, best_model, estados_muestra)
-                    #     kl_umbral = 0.005  
-                    #     if kl > kl_umbral
-                    #         policy_model = deepcopy(best_model)
-                    #     end
-                    # end
+                    if length(buffer_estados) >= 5
+                        estados_muestra = buffer_estados[end-4:end]
+                        kl = kl_batch(policy_model, best_model, estados_muestra)
+                        kl_umbral = 0.005  
+                        if kl > kl_umbral
+                            policy_model = deepcopy(best_model)
+                        end
+                    end
                 end
-                if no_improve > batch_size/2
-                    policy_model = deepcopy(best_model)
-                    no_improve = 0
-                end
+                # if no_improve > batch_size/2
+                #     policy_model = deepcopy(best_model)
+                #     no_improve = 0
+                # end
             end
         end
         episodio += 1
