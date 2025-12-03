@@ -265,7 +265,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
     mejor_trayectoria = ([],[],[],[])
 
     episodio = 1
-
+    kl_umbral = 0.02  
     β_max = 0.6   # exploración máxima agresiva
     β_min = 0.01   # mínima exploración
     β = 0.1     # inicial
@@ -317,10 +317,8 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
         if entorno.mejor_FO <= entorno.actual_FO && episodio > 0.25*num_episodios
             mejor_trayectoria = (copy(estados_epi), copy(acciones_idx_epi), copy(retornos), copy(ventajas))
         end
-        episodios_acumulados += 1
-
         # --- Función de pérdida REINFORCE ---
-        if episodios_acumulados >= batch_size
+        if episodio % batch_size == 0
             if episodio > 0.25*num_episodios
                 append!(buffer_estados, mejor_trayectoria[1])
                 append!(buffer_acciones, mejor_trayectoria[2])
@@ -362,17 +360,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             Flux.Optimise.update!(opt_state, ps, back[1])
             push!(perdidas_por_batch, loss_val)
             
-            # Limpieza
-            empty!(buffer_estados)
-            empty!(buffer_acciones)
-            empty!(buffer_retornos)
-            empty!(buffer_ventajas)
-            episodios_acumulados = 0
-        end
-
-        # # --- VALIDACIÓN DETERMINISTA ---
-        if episodio % batch_size == 0
-            
+            # Validación determinista
             entorno_test = RedElectricaEntorno(nlines, caseStudyData["Stage"], caseStudyData["vk"], caseStudyData["vs"], caseStudyData)
             fo, _ = evaluar_red_reinforce(policy_model, entorno_test, caseStudyData)
             push!(val_fo, fo)
@@ -399,23 +387,22 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 else
                     no_improve += 1
                     # seleccionar algunos estados del buffer
-                    if length(buffer_estados) >= 5
-                        estados_muestra = buffer_estados[end-4:end]
-                        kl = kl_batch(policy_model, best_model, estados_muestra)
-                        kl_umbral = 0.005  
-                        if kl > kl_umbral
-                            policy_model = deepcopy(best_model)
-                        end
+                    kst = min(10, length(buffer_estados))
+                    idx = rand(1:length(buffer_estados), kst)
+                    estados_muestra = buffer_estados[idx]
+                    kl = kl_batch(policy_model, best_model, estados_muestra)
+                    if kl > kl_umbral
+                        policy_model = deepcopy(best_model)
                     end
                 end
-                # if no_improve > batch_size/2
-                #     policy_model = deepcopy(best_model)
-                #     no_improve = 0
-                # end
             end
+            # Limpieza
+            empty!(buffer_estados)
+            empty!(buffer_acciones)
+            empty!(buffer_retornos)
+            empty!(buffer_ventajas)
         end
         episodio += 1
-        
     end
     return best_model
 end
