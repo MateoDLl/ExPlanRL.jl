@@ -389,7 +389,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                     no_improve += 1
                     # seleccionar algunos estados del buffer
                     kst = min(10, length(buffer_estados))
-                    idx = randperm(length(buffer_estados))[1:kst]
+                    idx = Random.randperm(length(buffer_estados))[1:kst]
                     estados_muestra = buffer_estados[idx]
                     kl = kl_batch(policy_model, best_model, estados_muestra)
                     if kl > kl_umbral
