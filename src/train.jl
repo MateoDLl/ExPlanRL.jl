@@ -1,6 +1,5 @@
-function evaluar_parametros(params, semilla, caseData, timeGlobal;
-    policy_model = nothing, kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
-    hidden1=64, hidden2=32)
+function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax , βmin, a_beta,
+    hidden1, hidden2; policy_model = nothing)
 
     nlines = caseData["nlines"]
     Stage = caseData["Stage"]
@@ -82,7 +81,8 @@ end
 function wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
     hidden1, hidden2; policy=nothing)
     Random.seed!(semilla)
-    evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, policy_model = policy)
+    evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
+    hidden1, hidden2, policy_model = policy)
 end
 
 
