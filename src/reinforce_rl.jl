@@ -252,7 +252,8 @@ end
 
 # --- Entrenamiento con REINFORCE ---
 function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model, opt, batch_size, γ, βet, 
-    perdidas_por_batch, recompensas_por_episodios, caseStudyData)
+    perdidas_por_batch, recompensas_por_episodios, caseStudyData;
+    kl_umbral = 0.02,β_max = 0.6, β_min = 0.01, ajuste_beta = 0.03)
     opt_state = Flux.setup(opt, policy_model)
     nlines =caseStudyData["nlines"]
     buffer_estados = []
@@ -261,17 +262,12 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
     buffer_ventajas = []
 
     val_fo = Float64[]
-    episodios_acumulados = 0
     ps = Flux.trainable(policy_model)
     mejor_trayectoria = ([],[],[],[])
 
     episodio = 1
-    kl_umbral = 0.02  
-    β_max = 0.6   # exploración máxima agresiva
-    β_min = 0.01   # mínima exploración
     β = 0.1     # inicial
-    ajuste_beta = 0.03   # paso de ajuste de β
-
+   
     ventana_val = 2
     val_fo = Float32[]
     best_val_fo = Inf
@@ -379,24 +375,24 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 end
             end
 
-            if episodio > 0.2*num_episodios # Evitar resultados iniciales afortunados
+            #if episodio > 0.1*num_episodios # Evitar resultados iniciales afortunados
                 # --- Guardar mejor modelo ---
-                if fo <= best_val_fo
-                    best_val_fo = fo
-                    best_model = deepcopy(policy_model)
-                    no_improve = 0
-                else
-                    no_improve += 1
-                    # seleccionar algunos estados del buffer
-                    kst = min(10, length(buffer_estados))
-                    idx = Random.randperm(length(buffer_estados))[1:kst]
-                    estados_muestra = buffer_estados[idx]
-                    kl = kl_batch(policy_model, best_model, estados_muestra)
-                    if kl > kl_umbral
-                        policy_model = deepcopy(best_model)
-                    end
+            if fo <= best_val_fo
+                best_val_fo = fo
+                best_model = deepcopy(policy_model)
+                no_improve = 0
+            else
+                no_improve += 1
+                # seleccionar algunos estados del buffer
+                kst = min(10, length(buffer_estados))
+                idx = Random.randperm(length(buffer_estados))[1:kst]
+                estados_muestra = buffer_estados[idx]
+                kl = kl_batch(policy_model, best_model, estados_muestra)
+                if kl > kl_umbral
+                    policy_model = deepcopy(best_model)
                 end
             end
+            #end
             # Limpieza
             empty!(buffer_estados)
             empty!(buffer_acciones)

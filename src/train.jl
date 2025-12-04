@@ -1,4 +1,7 @@
-function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model = nothing)
+function evaluar_parametros(params, semilla, caseData, timeGlobal;
+    policy_model = nothing, kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
+    hidden1=64, hidden2=32)
+
     nlines = caseData["nlines"]
     Stage = caseData["Stage"]
     caseData["v_line_node"] = line_node(caseData)
@@ -12,8 +15,6 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model 
     nepi = round(Int,params[6])
     β = params[7]
     # Ejecuta el algoritmo
-    hidden1 = 64
-    hidden2 = 32
     if isnothing(policy_model)
         policy_model_0 = Flux.Chain(
             Flux.Dense(12, hidden1, NNlib.relu),
@@ -28,7 +29,8 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model 
     opt = Flux.Adam(tasa_aprendizaje)
     #opt_state = Flux.setup(opt, policy_model)
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)  # candidatos
-    timeTrain = @elapsed policy_model = entrenar_reinforce_batch_baseline!(nepi, entorno, policy_model_0, opt, frecuencia, γ, β, perdidas_por_batch, recompensas_episodios,caseData)
+    timeTrain = @elapsed policy_model = entrenar_reinforce_batch_baseline!(nepi, entorno, policy_model_0, opt, frecuencia, γ, β, perdidas_por_batch, recompensas_episodios,caseData,
+                                    kl_umbral = kl_um,β_max = βmax, β_min = βmin, ajuste_beta = a_beta)
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)
     
     timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
@@ -53,7 +55,9 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal; policy_model 
 end
 
 #Random.seed!(1234)
-function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool)
+function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool;
+    kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
+    hidden1=64, hidden2=32)
     caseStudyData = prepare_case(system, rc, n1)
     p1 = [4]
     p2 = [4]
@@ -62,54 +66,28 @@ function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool)
     p5 = [0.99 0.999]
     p6 = [500]
     p7 = [0.1]
-    correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData)
+    correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData, kl_um,βmax, βmin, a_beta,
+                            hidden1, hidden2)
 end
 
-function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool, path::String)
+function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool, path::String;
+    kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
+    hidden1=64, hidden2=32)
     caseStudyData = prepare_case(system, rc, n1)
-    correr_experimentos_trained_pmap(path, caseStudyData)
+    correr_experimentos_trained_pmap(path, caseStudyData, kl_um,βmax, βmin, a_beta,
+                                    hidden1, hidden2)
 end
 
-function correr_experimentos(p1, p2, p3, p4, p5, p6, p7, caseStudyData)
-    seed = 1000
-    combo_id = 0
-    for (v1, v2, v3, v4, v5, v6, v7) in Iterators.product(p1, p2, p3, p4, p5, p6, p7)
-        for rep in 1:1
-            parametros_test = [v1, v2, v3, v4, v5, v6, v7]
-            semilla = seed + combo_id * 10 + rep
-            Random.seed!(semilla)
-            evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal)
-        end
-        combo_id += 1
-    end
-end
 
-function correr_experimentos_seleccionado(experimentos, p1, p2, p3, p4, p5, p6, p7, caseStudyData)
-    seed = 1000
-    combo_id = 0
-    experimento_global = 1  # contador global
-
-    for (v1, v2, v3, v4, v5, v6, v7) in Iterators.product(p1, p2, p3, p4, p5, p6, p7)
-        for rep in 1:1
-            if experimento_global in experimentos
-                parametros_test = [v1, v2, v3, v4, v5, v6, v7]
-                semilla = seed + combo_id * 10 + rep
-                Random.seed!(semilla)
-                evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal)
-            end
-            experimento_global += 1
-        end
-        combo_id += 1
-    end
-end
-
-function wrapper(parametros_test, semilla, caseStudyData, timeGlobal; policy=nothing)
+function wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
+    hidden1, hidden2; policy=nothing)
     Random.seed!(semilla)
     evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, policy_model = policy)
 end
 
 
-function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData)
+function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData, kl_um,βmax, βmin, a_beta,
+    hidden1, hidden2)
     seed = 1000
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
@@ -123,17 +101,20 @@ function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData)
         combo_id += 1
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla) 
-        wrapper(parametros_test, semilla, caseStudyData, timeGlobal)
+        wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
+                hidden1, hidden2)
     end
     
 end 
 
 function wrapper_pmap(args)
     parametros_test, semilla, policy_model = args
-    return wrapper(parametros_test, semilla, caseStudyData, timeGlobal, policy = policy_model)
+    return wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
+    hidden1, hidden2, policy = policy_model)
 end
 
-function correr_experimentos_trained_pmap(path_archivo, caseStudyData)
+function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βmax, βmin, a_beta,
+    hidden1, hidden2)
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
 
@@ -146,7 +127,8 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData)
         end
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model)
-        wrapper(parametros_test, semilla, caseStudyData, timeGlobal, policy = policy_model)
+        wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
+    hidden1, hidden2, policy = policy_model)
     end
 end  
 
