@@ -236,6 +236,7 @@ function calcular_retorno(recompensas, γ)
 end
 
 function kl_policy(model_new, model_best, estado)
+    estado = hcat(estado...)
     logits_new = vec(model_new(estado))
     logits_best = vec(model_best(estado))
 
@@ -388,7 +389,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                     no_improve += 1
                     # seleccionar algunos estados del buffer
                     kst = min(10, length(buffer_estados))
-                    idx = rand(1:length(buffer_estados), kst)
+                    idx = randperm(length(buffer_estados))[1:kst]
                     estados_muestra = buffer_estados[idx]
                     kl = kl_batch(policy_model, best_model, estados_muestra)
                     if kl > kl_umbral
