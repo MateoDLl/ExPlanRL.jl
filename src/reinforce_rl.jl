@@ -196,27 +196,37 @@ end
 # --- Función para seleccionar acción por muestreo de distribución ---
 function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, nlines;stocas::Bool=true)
     q_input = hcat(estado...)  # Estado en columnas
-    probs = NNlib.softmax(vec(policy_model(q_input)))  # Probabilidades por acción
+    # probs = NNlib.softmax(vec(policy_model(q_input)))  # Probabilidades por acción
     # Filtrar solo acciones disponibles y normalizar
-    mask = zeros(Float32, length(probs))
+    # mask = zeros(Float32, length(probs))
+    # for a in acciones_disponibles
+    #     idx = Int(a[1] + (a[2] - 1) * nlines)
+    #     mask[idx] = probs[idx]
+    # end
+    # Validación y normalización segura
+    # if any(isnan, mask) || any(isinf, mask) || sum(mask) ≤ 0
+    #     #println("Advertencia: Mask inválido (NaN, Inf o suma 0). Se usará distribución uniforme.")
+    #     for a in acciones_disponibles
+    #         idx = Int(a[1] + (a[2] - 1) * nlines)
+    #         mask[idx] = 1.0
+    #     end
+    # end
+
+    #mask_norm = mask / sum(mask)
+
+    logits = vec(policy_model(q_input))
+    mask_logits = fill(-Inf32, length(logits))
     for a in acciones_disponibles
         idx = Int(a[1] + (a[2] - 1) * nlines)
-        mask[idx] = probs[idx]
-    end
-    # Validación y normalización segura
-    if any(isnan, mask) || any(isinf, mask) || sum(mask) ≤ 0
-        #println("Advertencia: Mask inválido (NaN, Inf o suma 0). Se usará distribución uniforme.")
-        for a in acciones_disponibles
-            idx = Int(a[1] + (a[2] - 1) * nlines)
-            mask[idx] = 1.0
-        end
+        mask_logits[idx] = logits[idx]
     end
 
-    mask_norm = mask / sum(mask)
     if stocas
-        accion_idx = sample(1:length(mask_norm), Weights(mask_norm))
+        #accion_idx = sample(1:length(mask_norm), Weights(mask_norm))
+        accion_idx = sample(1:length(mask_logits), Weights(exp.(mask_logits .- maximum(mask_logits))))
     else
-        accion_idx = argmax(mask_norm)
+        #accion_idx = argmax(mask_norm)
+        accion_idx = argmax(mask_logits)
     end
     # Convertir indice a CartesianIndex
     p_en = div(accion_idx - 1, nlines) + 1
