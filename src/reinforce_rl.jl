@@ -390,17 +390,15 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             if fo <= best_val_fo
                 best_val_fo = fo
                 best_model = deepcopy(policy_model)
-                no_improve = 0
-            else
-                no_improve += 1
-                # seleccionar algunos estados del buffer
-                kst = min(10, length(buffer_estados))
-                idx = Random.randperm(length(buffer_estados))[1:kst]
-                estados_muestra = buffer_estados[idx]
-                kl = kl_batch(policy_model, best_model, estados_muestra)
-                if kl > kl_umbral
-                    policy_model = deepcopy(best_model)
-                end
+            # else
+            #     # seleccionar algunos estados del buffer
+            #     kst = min(10, length(buffer_estados))
+            #     idx = Random.randperm(length(buffer_estados))[1:kst]
+            #     estados_muestra = buffer_estados[idx]
+            #     kl = kl_batch(policy_model, best_model, estados_muestra)
+            #     if kl > kl_umbral
+            #         policy_model = deepcopy(best_model)
+            #     end
             end
             #end
             # Limpieza
