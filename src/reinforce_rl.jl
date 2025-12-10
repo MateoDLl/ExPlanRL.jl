@@ -208,7 +208,7 @@ function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, n
     cand_logits = logits[cand_idx]
 
     k_eff = min(k, length(cand_idx))
-    topk_order = partialsortperm(cand_logits, :, rev=true)[1:k_eff]  # indices in cand_logits
+    topk_order = partialsortperm(cand_logits, 1:k_eff, rev=true)  # indices in cand_logits
     topk_idx = cand_idx[topk_order]                                  # map back to global indices
     topk_logits = cand_logits[topk_order]
 
