@@ -24,7 +24,7 @@ function prepare_case(system::String, shuntcomp::Bool, n1ctg::Bool;
     sort!(unique_vals, rev = true)
     n = length(unique_vals)
 
-    rank_map = Dict(v => k/(n+1) for (k,v) in enumerate(unique_vals))
+    rank_map = Dict(v => 0.5+k/(2*n+1) for (k,v) in enumerate(unique_vals))
     rank_norm = [rank_map[v] for v in cost_vals]
 
     Mat_cost_rank = reshape(rank_norm, size(Mat_cost))
