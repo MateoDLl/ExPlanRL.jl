@@ -22,8 +22,8 @@ function idx_to_state(
             # mat_red_iso = ifelse.(mat_red .== 0.0, 1.0, 0.0)
 
             # Coeficiente de variación personalizado
-            mat_red = (((((1 / n_node) .- mat_red).^2) ./ n_node).^0.5) ./ (1 / n_node)
-            mat_red = mat_red ./ sum(mat_red, dims = 1)
+            # mat_red = (((((1 / n_node) .- mat_red).^2) ./ n_node).^0.5) ./ (1 / n_node)
+            # mat_red = mat_red ./ sum(mat_red, dims = 1)
             # mat_red .+= mat_red_iso
 
             # Concatenar con info de potencia
