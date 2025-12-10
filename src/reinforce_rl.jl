@@ -55,7 +55,7 @@ function idx_to_state(
             # mean
             mean_idx = (state_max[etapa][f, :] .+ state_max[etapa][t, :])/2
             # diff
-            diff_idx = abs(state_max[etapa][f, :] .- state_max[etapa][t, :])
+            diff_idx = abs.(state_max[etapa][f, :] .- state_max[etapa][t, :])
 
             States[idx] = vcat(mean_idx, diff_idx, [cap_u, cost_u])
         end
