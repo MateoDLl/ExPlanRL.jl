@@ -52,7 +52,12 @@ function idx_to_state(
             cap_u  = caseStudyData["Mat_Cap_U"][i, 1]
             cost_u = caseStudyData["Mat_cost_U"][i, 1]
             idx = (etapa - 1) * round(Int, num_candidatos / Stage) + i
-            States[idx] = vcat(state_max[etapa][f, :], state_max[etapa][t, :], [cap_u, cost_u])
+            # mean
+            mean_idx = (state_max[etapa][f, :] .+ state_max[etapa][t, :])/2
+            # diff
+            diff_idx = abs(state_max[etapa][f, :] .- state_max[etapa][t, :])
+
+            States[idx] = vcat(mean_idx, diff_idx, [cap_u, cost_u])
         end
     end
 

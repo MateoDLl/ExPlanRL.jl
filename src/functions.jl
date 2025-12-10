@@ -15,13 +15,22 @@ function prepare_case(system::String, shuntcomp::Bool, n1ctg::Bool;
     stages   = caseStudyData["Stage"]
 
     # Compute normalized cost and capacity matrices
-    caseStudyData["Mat_cost_U"] = (maximum(Mat_cost) ./ (Mat_cost .* discount)) ./ growth
     caseStudyData["Mat_Cap_U"]  = maximum(caseStudyData["Idx_Cost_Cap"]) ./ 
                                   (caseStudyData["Idx_Cost_Cap"] .* ones(1, stages))
-
-    caseStudyData["Mat_cost_U"] ./= maximum(caseStudyData["Mat_cost_U"])
     caseStudyData["Mat_Cap_U"]  ./= maximum(caseStudyData["Mat_Cap_U"])
+    cost_vals = vec(Mat_cost)
 
+    unique_vals = unique(cost_vals)
+    sort!(unique_vals, rev = true)
+    n = length(unique_vals)
+
+    rank_map = Dict(v => k/(n+1) for (k,v) in enumerate(unique_vals))
+    rank_norm = [rank_map[v] for v in cost_vals]
+
+    Mat_cost_rank = reshape(rank_norm, size(Mat_cost))
+
+    caseStudyData["Mat_cost_U"] = (Mat_cost_rank .* discount) ./ growth
+    
     return caseStudyData
 end
 
