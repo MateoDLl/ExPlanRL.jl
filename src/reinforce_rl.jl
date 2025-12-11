@@ -292,7 +292,7 @@ function kl_batch(model_new, model_best, estados)
 end
 
 # --- Entrenamiento con REINFORCE ---
-function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model, opt, batch_size, γ, βet, 
+function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model, opt, batch_size, γ, 
     perdidas_por_batch, recompensas_por_episodios, caseStudyData;
     kl_umbral = 0.02,β_max = 0.6, β_min = 0.01, ajuste_beta = 0.03)
     opt_state = Flux.setup(opt, policy_model)

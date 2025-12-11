@@ -1,5 +1,5 @@
 function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax , βmin, a_beta,
-    hidden1, hidden2; policy_model = nothing)
+    hidden1, hidden2, network; policy_model = nothing)
 
     nlines = caseData["nlines"]
     Stage = caseData["Stage"]
@@ -12,7 +12,6 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax 
     tasa_aprendizaje = params[4]
     γ = params[5]      # factor de descuento
     nepi = round(Int,params[6])
-    β = params[7]
     # Ejecuta el algoritmo
     if isnothing(policy_model)
         policy_model_0 = Flux.Chain(
@@ -28,18 +27,16 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax 
     opt = Flux.Adam(tasa_aprendizaje)
     #opt_state = Flux.setup(opt, policy_model)
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)  # candidatos
-    timeTrain = @elapsed policy_model = entrenar_reinforce_batch_baseline!(nepi, entorno, policy_model_0, opt, frecuencia, γ, β, perdidas_por_batch, recompensas_episodios,caseData,
+    timeTrain = @elapsed policy_model = entrenar_reinforce_batch_baseline!(nepi, entorno, policy_model_0, opt, frecuencia, γ, perdidas_por_batch, recompensas_episodios,caseData,
                                     kl_umbral = kl_um,β_max = βmax, β_min = βmin, ajuste_beta = a_beta)
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)
     
     timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
-    wid = Distributed.myid()                        # ID del worker → 2,3,4,...
-    #uid = string(UUIDs.uuid4())[1:8]    # 8 caracteres aleatorios
 
     folder = get_experiment_folder(timeGlobal, base="test")
 
     filename = joinpath(folder,
-                        "resultados_$(nepi)_$(timestamp)_$(wid).bson")
+                        "resultados_$(nepi)_$(timestamp)_$(network).bson")
 
     open(joinpath(folder, "PruebasREINFORCE.txt"), "a") do io
         println(io, basename(filename))
@@ -48,7 +45,7 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax 
 
     #@save filename timeTrain params nepi perdidas_por_batch
     VFO = evaluar_red_reinforce(policy_model, entorno, caseData)  
-    @save filename policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios  
+    @save filename policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network  
     # Devuelve el valor a minimizar 
     #return VFO
 end
@@ -56,16 +53,11 @@ end
 #Random.seed!(1234)
 function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool;
     kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
-    hidden1=64, hidden2=32)
+    hidden1=64, hidden2=32, 
+    parameters = [[4],[4],[3 6 9],[0.005 0.01], [0.99 0.999], [500]])
     caseStudyData = prepare_case(system, rc, n1)
-    p1 = [4]
-    p2 = [4]
-    p3 = [3 6 9]
-    p4 = [0.005 0.01]
-    p5 = [0.99 0.999]
-    p6 = [500]
-    p7 = [0.1]
-    correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData, kl_um,βmax, βmin, a_beta,
+    p1,p2,p3,p4,p5,p6 = parameters
+    correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax, βmin, a_beta,
                             hidden1, hidden2)
 end
 
@@ -79,30 +71,25 @@ end
 
 
 function wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2; policy=nothing)
+    hidden1, hidden2, net; policy=nothing)
     Random.seed!(semilla)
     evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, policy_model = policy)
+    hidden1, hidden2, net, policy_model = policy)
 end
 
 
-function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6,p7, caseStudyData, kl_um,βmax, βmin, a_beta,
+function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax, βmin, a_beta,
     hidden1, hidden2)
     seed = 1000
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
-    combo_id = 0
-    for (v1, v2, v3, v4, v5, v6, v7) in Iterators.product(p1, p2, p3, p4, p5, p6, p7)
-        for rep in 1:1
-            parametros_test = (v1, v2, v3, v4, v5, v6, v7)
-            semilla = seed + combo_id * 10 + rep
-            push!(trabajos, (parametros_test, semilla))
-        end
-        combo_id += 1
+    for (i, params) in enumerate(Iterators.product(p1, p2, p3, p4, p5, p6))
+        semilla = seed + i * 10
+        push!(trabajos, (params, semilla, i))
     end
-    Distributed.pmap(trabajos) do (parametros_test, semilla) 
+    Distributed.pmap(trabajos) do (parametros_test, semilla, net) 
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-                hidden1, hidden2)
+                hidden1, hidden2, net)
     end
     
 end 
@@ -122,13 +109,13 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βm
 
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
-            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios
+            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios net
             push!(trabajos, (params, semilla, policy_model) )
         end
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model)
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, policy = policy_model)
+    hidden1, hidden2, net, policy = policy_model)
     end
 end  
 
@@ -150,13 +137,11 @@ function cargar_modelos(path_archivo, vec_id)
 
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
-            if id in vec_id
-                push!(vec_names, filename)
-                @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios
-                push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
-                push!(vec_VFO, VFO)
-                plot_with_tendency(perdidas_por_batch, recompensas_episodios, VFO, id, folder)
-            end
+            push!(vec_names, filename)
+            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios net
+            push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
+            push!(vec_VFO, VFO)
+            plot_with_tendency(perdidas_por_batch, recompensas_episodios, VFO, net, folder) 
         end
     end
 
