@@ -68,7 +68,7 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
     if data["ReactiveCompesation"]
         FO = 10.0^39
         feas = true
-        _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_rc(data,top; subgra=true)
+        _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_rc(data,top; subgra=false)
         if !(Int(St) in [1 4 7 10])
             FO = (FO+1)*10^9
             feas = false
@@ -77,7 +77,7 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
     else
         FO = 10.0^39
         feas = true 
-        _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_nrc(data,top; subgra=true)
+        _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_nrc(data,top; subgra=false)
         if !(Int(St) in [1 4 7 10])
             FO = (FO+1)*10^9
             feas = false
