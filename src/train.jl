@@ -55,6 +55,7 @@ function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool;
     kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
     hidden1=64, hidden2=32, 
     parameters = [[4],[4],[3 6 9],[0.005 0.01], [0.99 0.999], [500]])
+    @info("$(system),  N_ep: $(parameters[6])")
     caseStudyData = prepare_case(system, rc, n1)
     p1,p2,p3,p4,p5,p6 = parameters
     correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax, βmin, a_beta,
