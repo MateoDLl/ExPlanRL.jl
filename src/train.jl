@@ -130,23 +130,23 @@ function evaluar_parametros(params, policy_model, nlines, Stage, caseStudyData; 
 end
 
 
-function cargar_modelos(path_archivo, vec_id)
+function cargar_modelos(path_archivo, vec_idd)
     vec_names = String[]
     vec_results = []
-    vec_VFO = []
+    vec_id = []
     folder = dirname(path_archivo)
 
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
-            push!(vec_names, filename)
             @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
+            push!(vec_names, filename)
             push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
-            push!(vec_VFO, VFO)
-            plot_with_tendency(perdidas_por_batch, recompensas_episodios, VFO, net, folder) 
+            push!(vec_id, network)
+            plot_with_tendency(perdidas_por_batch, recompensas_episodios, VFO, network, folder) 
         end
     end
 
-    return vec_names, vec_results, vec_VFO
+    return vec_names, vec_results, vec_id
 end
 
 function evaluar_sistemas(vec_results, sistemas, react_comps, contingens;
@@ -258,14 +258,14 @@ function run_evaluation(path_pruebas::String,
     end
 
     # Cargar los modelos entrenados
-    vec_names, vec_results, vec_VFO = cargar_modelos(path_pruebas, vec_id)
+    vec_names, vec_results, vec_net = cargar_modelos(path_pruebas, vec_id)
 
     println("=== Ejecutando evaluación sobre sistemas ===")
 
     # Usando pmap
     vector_total = Distributed.pmap((sis_train, id) -> evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingens, 
         stage=stage, grate=grate, drate = drate, yearst=yearst, sel = select),
-                    vec_results, vec_id)
+                    vec_results, vec_net)
 
     st_rc  = any(react_comps)  ? "_RC" : ""
     st_ctg = any(contingens)   ? "N1"  : ""
