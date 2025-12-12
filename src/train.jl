@@ -119,7 +119,7 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βm
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model)
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, net, policy = policy_model)
+    hidden1, hidden2, network, policy = policy_model)
     end
 end  
 
