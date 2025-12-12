@@ -357,12 +357,12 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
         end
         # --- Función de pérdida REINFORCE ---
         if episodio % batch_size == 0
-            if episodio > 0.25*num_episodios
-                append!(buffer_estados, mejor_trayectoria[1])
-                append!(buffer_acciones, mejor_trayectoria[2])
-                append!(buffer_retornos, mejor_trayectoria[3])
-                append!(buffer_ventajas, mejor_trayectoria[4])
-            end
+            # if episodio > 0.25*num_episodios
+            #     append!(buffer_estados, mejor_trayectoria[1])
+            #     append!(buffer_acciones, mejor_trayectoria[2])
+            #     append!(buffer_retornos, mejor_trayectoria[3])
+            #     append!(buffer_ventajas, mejor_trayectoria[4])
+            # end
             # Calcula baseline común
             recompensa_promedio = mean(buffer_retornos)
             ventajas = buffer_retornos .- copy(recompensa_promedio)
