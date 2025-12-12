@@ -64,10 +64,11 @@ end
 
 function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool, path::String;
     kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
-    hidden1=64, hidden2=32)
+    hidden1=64, hidden2=32,
+    episodes = 100)
     caseStudyData = prepare_case(system, rc, n1)
     correr_experimentos_trained_pmap(path, caseStudyData, kl_um,βmax, βmin, a_beta,
-                                    hidden1, hidden2)
+                                    hidden1, hidden2, episodes)
 end
 
 
@@ -102,7 +103,7 @@ function wrapper_pmap(args)
 end
 
 function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2)
+    hidden1, hidden2, episodes)
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
 
@@ -111,7 +112,9 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βm
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
             @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
-            push!(trabajos, (params, semilla, policy_model) )
+            p1,p2,p3,p4,p5,_ = params
+            new_param = (p1,p2,p3,p4,p5,episodes)
+            push!(trabajos, (new_param, semilla, policy_model) )
         end
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model)
