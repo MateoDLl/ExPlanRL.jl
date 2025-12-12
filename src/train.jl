@@ -110,7 +110,7 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βm
 
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
-            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios net
+            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
             push!(trabajos, (params, semilla, policy_model) )
         end
     end
@@ -139,7 +139,7 @@ function cargar_modelos(path_archivo, vec_id)
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
             push!(vec_names, filename)
-            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios net
+            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
             push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
             push!(vec_VFO, VFO)
             plot_with_tendency(perdidas_por_batch, recompensas_episodios, VFO, net, folder) 
