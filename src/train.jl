@@ -114,10 +114,10 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βm
             @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
             p1,p2,p3,p4,p5,_ = params
             new_param = (p1,p2,p3,p4,p5,episodes)
-            push!(trabajos, (new_param, semilla, policy_model) )
+            push!(trabajos, (new_param, semilla, policy_model, network) )
         end
     end
-    Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model)
+    Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model, network)
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
     hidden1, hidden2, network, policy = policy_model)
     end
