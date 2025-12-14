@@ -307,9 +307,9 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
     mejor_trayectoria = ([],[],[],[])
 
     episodio = 1
-    β = 0.1     # inicial
+    β = 0.2     # inicial
    
-    ventana_val = 2
+    ventana_val = 5
     val_fo = Float32[]
     best_val_fo = Inf
     best_model = deepcopy(policy_model) 
@@ -403,24 +403,27 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             fo, _ = evaluar_red_reinforce(policy_model, entorno_test, caseStudyData)
             push!(val_fo, fo)
             #@info("Episodio: $episodio | β: $β | FO val: $fo")
-            if length(val_fo) >= 2 * ventana_val
+            if length(val_fo) >= ventana_val
                 fo_reciente = mean(@view val_fo[end - ventana_val + 1:end])
-                fo_anterior = mean(@view val_fo[end - 2*ventana_val + 1:end - ventana_val]) 
-                mejora_val = fo_anterior - fo_reciente
-
-                # --- Ajuste dinámico de β ---
-                if mejora_val <= 0 
-                    β = min(β + ajuste_beta, β_max)   # subir β hasta β_max
-                else
-                    β = max(β - ajuste_beta, β_min)   # bajar β hasta β_min
+                if length(val_fo) >= 2 * ventana_val
+                    fo_anterior = mean(@view val_fo[end - 2*ventana_val + 1:end - ventana_val]) 
+                    mejora_val = fo_anterior - fo_reciente
+                    # --- Ajuste dinámico de β ---
+                    if mejora_val <= 0 
+                        β = min(β + ajuste_beta, β_max)   # subir β hasta β_max
+                    else
+                        β = max(β - ajuste_beta, β_min)   # bajar β hasta β_min
+                    end
+                end
+             # --- Guardar mejor modelo ---
+                if fo_reciente <= best_val_fo
+                    best_val_fo = fo_reciente
+                    best_model = deepcopy(policy_model)
                 end
             end
-
-            #if episodio > 0.1*num_episodios # Evitar resultados iniciales afortunados
-                # --- Guardar mejor modelo ---
-            if fo <= best_val_fo
-                best_val_fo = fo
-                best_model = deepcopy(policy_model)
+            # if fo <= best_val_fo
+            #     best_val_fo = fo
+            #     best_model = deepcopy(policy_model)
             # else
             #     # seleccionar algunos estados del buffer
             #     kst = min(10, length(buffer_estados))
@@ -430,8 +433,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             #     if kl > kl_umbral
             #         policy_model = deepcopy(best_model)
             #     end
-            end
-            #end
+            # end
             # Limpieza
             empty!(buffer_estados)
             empty!(buffer_acciones)
