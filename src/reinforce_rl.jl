@@ -70,7 +70,7 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
         feas = true
         _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_rc(data,top; subgra=false)
         if !(Int(St) in [1 4 7 10])
-            #FO = (FO+1)*10^9
+            FO = (FO+1)*3
             feas = false
         end 
         return FO,feas,cty
@@ -79,7 +79,7 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
         feas = true 
         _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_nrc(data,top; subgra=false)
         if !(Int(St) in [1 4 7 10])
-            #FO = (FO+1)*10^9
+            FO = (FO+1)*3
             feas = false
         end 
         return FO,feas,cty
@@ -160,9 +160,7 @@ function evaluar_red!(entorno, FO, feas, n_action)
     end
 
     # ---------- Recompensa BASE (siempre batch-consistente) ----------
-    FO_r = feas ? FO : FO + 2 * FO
-    x = entorno.mejor_FO_batch / FO_r
-    #x = entorno.mejor_FO_batch / FO
+    x = entorno.mejor_FO_batch / FO
     #x = min(x, 1.0)  # clamp por seguridad numérica
 
     ratio = 1 - exp(-entorno.κ * x^entorno.σ)
