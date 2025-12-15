@@ -99,6 +99,8 @@ mutable struct RedElectricaEntorno
     promedio_recompensa::Float64
     κ::Int
     σ::Int
+    mejor_FO_batch::Union{Nothing, Float64}
+    factor_batch::Float64
 end
 
 function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyData)
@@ -107,7 +109,7 @@ function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyD
     _,_,estado = eval_cty_tnep(caseStudyData, topologia)
     estado_inicial = idx_to_state(estado, num_candidatos*Stage, Stage, caseStudyData)
 
-    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, nothing, 0.0, nothing,1.0,vk,vs)
+    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 10e39, 0.0, nothing,1.0,vk,vs, nothing, 0.0)
 end
 
 function reset!(entorno::RedElectricaEntorno, caseStudyData)
@@ -140,62 +142,45 @@ function line_node(caseStudyData::Dict)::Vector{Tuple{Int, Int}}
 end
 
 function evaluar_red!(entorno, FO, feas, n_action)
-    if feas
-        entorno.actual_FO = FO
+    entorno.actual_FO = FO
 
-        # Primera solución factible
-        if isnothing(entorno.mejor_FO)
-            entorno.mejor_FO = FO
-            entorno.factor = 1.0
-            return true, 1.00  # recompensa inicial baja pero positiva
-        end
-
-        # Actualización del mejor FO si se mejora
-        if FO < entorno.mejor_FO
-            entorno.mejor_FO = FO
-            entorno.factor += 1.0 
-        end
-
-        # Recompensa basada en qué tan cerca estamos del mejor FO actual
-        x = (entorno.mejor_FO / FO)         # entre 0 y 1
-        ratio = 1 - exp(-entorno.κ * x^entorno.σ)
-        reward = (entorno.factor)*ratio            # escala a [0, factor]
-
-        return true, reward
-    else
-        if n_action
-            entorno.actual_FO = FO
-           # Primera solución no factible
-            if isnothing(entorno.mejor_FO)
-                entorno.mejor_FO = FO
-                entorno.factor = 1.0
-                return true, 1.00  # recompensa inicial baja pero positiva
-            end
-
-            # Actualización del mejor FO si se mejora
-            if FO < entorno.mejor_FO
-                entorno.mejor_FO = FO
-            end
-
-            # Recompensa basada en qué tan cerca estamos del mejor FO actual
-            x = (entorno.mejor_FO / FO)         # entre 0 y 1
-            ratio = 1 - exp(-entorno.κ * x^entorno.σ)
-            reward = (entorno.factor)*ratio            # escala a [0, factor]
-
-            return true, reward 
-        else
-            return false, 0.0
-        end
+    # Caso: acción inválida
+    if !feas && !n_action
+        return false, 0.0, false
     end
+
+    # Si no existe aún un mejor FO global (inicio del entrenamiento)
+    if isnothing(entorno.mejor_FO_batch)
+        entorno.mejor_FO_batch = FO
+        entorno.factor_batch = 1
+        entorno.factor = 1
+        return true, 1.0, true
+    end
+
+    # ---------- Recompensa BASE (siempre batch-consistente) ----------
+    x = entorno.mejor_FO_batch / FO
+    #x = min(x, 1.0)  # clamp por seguridad numérica
+
+    ratio = 1 - exp(-entorno.κ * x^entorno.σ)
+    reward = entorno.factor_batch * ratio
+
+    # ---------- Detección de nuevo Best (solo señal, no update) ----------
+    new_best = false
+    if feas && FO < entorno.mejor_FO_batch
+        new_best = true
+    end
+
+    return true, reward, new_best
 end
+
 
 function step!(entorno::RedElectricaEntorno, accion::CartesianIndex, caseStudyData, n_action)
     entorno.topologia[accion] += 1
     FO,feas,estado = eval_cty_tnep(caseStudyData, entorno.topologia)
     entorno.estado_actual = idx_to_state(estado, entorno.num_candidatos, caseStudyData["Stage"], caseStudyData)
-    terminal, recompensa = evaluar_red!(entorno,FO,feas, n_action)
+    terminal, recompensa, new_best = evaluar_red!(entorno,FO,feas, n_action)
     estado_siguiente = copy(entorno.estado_actual)
-    return (estado_siguiente, recompensa, terminal)
+    return (estado_siguiente, recompensa, terminal, new_best, FO)
 end
 
 function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, nlines; k=20, stocas=true)
@@ -313,7 +298,8 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
     val_fo = Float32[]
     best_val_fo = Inf
     best_model = deepcopy(policy_model) 
-    no_improve = 0
+    best_candidates = []
+    best_global = 10e29
 
     while episodio < num_episodios
         estado = reset!(entorno, caseStudyData)
@@ -330,7 +316,11 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             n_act += 1
             actfin = n_act >= 100
             accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines)
-            estado_siguiente, recompensa, terminado = step!(entorno, accion, caseStudyData, actfin)
+            estado_siguiente, recompensa, terminado, new_best, of = step!(entorno, accion, caseStudyData, actfin)
+
+            if new_best
+                push!(best_candidates, of)
+            end
 
             push!(estados_epi, estado)
             push!(acciones_idx_epi, accion_idx)
@@ -352,17 +342,9 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
         append!(buffer_acciones, acciones_idx_epi)
         append!(buffer_retornos, retornos)
 
-        if entorno.mejor_FO <= entorno.actual_FO && episodio > 0.25*num_episodios
-            mejor_trayectoria = (copy(estados_epi), copy(acciones_idx_epi), copy(retornos), copy(ventajas))
-        end
         # --- Función de pérdida REINFORCE ---
+        
         if episodio % batch_size == 0
-            # if episodio > 0.25*num_episodios
-            #     append!(buffer_estados, mejor_trayectoria[1])
-            #     append!(buffer_acciones, mejor_trayectoria[2])
-            #     append!(buffer_retornos, mejor_trayectoria[3])
-            #     append!(buffer_ventajas, mejor_trayectoria[4])
-            # end
             # Calcula baseline común
             recompensa_promedio = mean(buffer_retornos)
             ventajas = buffer_retornos .- copy(recompensa_promedio)
@@ -421,24 +403,26 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                     best_model = deepcopy(policy_model)
                 end
             end
-            # if fo <= best_val_fo
-            #     best_val_fo = fo
-            #     best_model = deepcopy(policy_model)
-            # else
-            #     # seleccionar algunos estados del buffer
-            #     kst = min(10, length(buffer_estados))
-            #     idx = Random.randperm(length(buffer_estados))[1:kst]
-            #     estados_muestra = buffer_estados[idx]
-            #     kl = kl_batch(policy_model, best_model, estados_muestra)
-            #     if kl > kl_umbral
-            #         policy_model = deepcopy(best_model)
-            #     end
-            # end
+            if !isempty(best_candidates)
+                best_batch = minimum(best_candidates)
+
+                if isnothing(entorno.mejor_FO) || best_batch < entorno.mejor_FO
+                    mejora_relativa = (entorno.mejor_FO - best_batch) / abs(entorno.mejor_FO)
+
+                    entorno.mejor_FO = best_batch
+
+                    # Incremento suave del factor (no discreto)
+                    entorno.factor += min(length(best_candidates),2)
+                end
+            end
+            entorno.mejor_FO_batch = entorno.mejor_FO
+            entorno.factor_batch   = entorno.factor       
             # Limpieza
             empty!(buffer_estados)
             empty!(buffer_acciones)
             empty!(buffer_retornos)
             empty!(buffer_ventajas)
+            empty!(best_candidates)
         end
         episodio += 1
     end
