@@ -65,9 +65,9 @@ function idx_to_state(
 end
 
 function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
+    FO = 10.0^39
+    feas = true 
     if data["ReactiveCompesation"]
-        FO = 10.0^39
-        feas = true
         _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_rc(data,top; subgra=false)
         if !(Int(St) in [1 4 7 10])
             FO = (FO+1)*3
@@ -75,8 +75,6 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
         end 
         return FO,feas,cty
     else
-        FO = 10.0^39
-        feas = true 
         _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_nrc(data,top; subgra=false)
         if !(Int(St) in [1 4 7 10])
             FO = (FO+1)*3
@@ -85,6 +83,30 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
         return FO,feas,cty
     end 
 end
+
+function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch )::Tuple{Float32,Bool,Dict}
+    FO = 10.0^39
+    feas = true
+    if data["ReactiveCompesation"]
+        _,FO,St,_,ap = ACOPF_Extensions.solve_tnep_N1_rc_AP(data,top; subgra=false)
+        FO = FO - ap*1e9
+        FO = FO + ap*1e2
+        if !(Int(St) in [1 4 7 10])
+            FO = FO + 1 * mejor_FO_batch
+        end 
+        return FO,feas,ap
+    else
+        _,FO,St,_,ap = ACOPF_Extensions.solve_tnep_N1_nrc_AP(data,top; subgra=false)
+        FO = FO - ap*1e9
+        FO = FO + ap*1e2
+        if !(Int(St) in [1 4 7 10])
+            FO = FO + 1 * mejor_FO_batch
+        end 
+        return FO,feas,ap
+    end 
+end
+
+
 # -------------------------
 # Simulación de entorno
 # -------------------------
@@ -179,6 +201,11 @@ end
 function step!(entorno::RedElectricaEntorno, accion::CartesianIndex, caseStudyData, n_action)
     entorno.topologia[accion] += 1
     FO,feas,estado = eval_cty_tnep(caseStudyData, entorno.topologia)
+    if !feas
+        if n_action
+            FO,feas,_ = eval_ap_tnep(caseStudyData, entorno.topologia,entorno.mejor_FO_batch )
+        end
+    end
     entorno.estado_actual = idx_to_state(estado, entorno.num_candidatos, caseStudyData["Stage"], caseStudyData)
     terminal, recompensa, new_best = evaluar_red!(entorno,FO,feas, n_action)
     estado_siguiente = copy(entorno.estado_actual)
