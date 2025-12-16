@@ -92,7 +92,7 @@ function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch )::Tuple{Float
         FO = FO - ap*1e9
         FO = FO + ap*1e2
         if !(Int(St) in [1 4 7 10])
-            FO = FO + 1 * mejor_FO_batch
+            FO = FO + 1.5*mejor_FO_batch
         end 
         return FO,feas,ap
     else
@@ -100,7 +100,7 @@ function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch )::Tuple{Float
         FO = FO - ap*1e9
         FO = FO + ap*1e2
         if !(Int(St) in [1 4 7 10])
-            FO = FO + 1 * mejor_FO_batch
+            FO = FO + 1.5*mejor_FO_batch
         end 
         return FO,feas,ap
     end 
@@ -131,7 +131,7 @@ function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyD
     _,_,estado = eval_cty_tnep(caseStudyData, topologia)
     estado_inicial = idx_to_state(estado, num_candidatos*Stage, Stage, caseStudyData)
 
-    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 10e39, 0.0, nothing,1.0,vk,vs, nothing, 0.0)
+    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 10e39, 0.0, nothing,1.0,vk,vs, 10e39, 0.0)
 end
 
 function reset!(entorno::RedElectricaEntorno, caseStudyData)
@@ -343,7 +343,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
         n_act = 0
         while !terminado             
             n_act += 1
-            actfin = n_act >= 100
+            actfin = n_act >= 50
             accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines)
             estado_siguiente, recompensa, terminado, new_best, of = step!(entorno, accion, caseStudyData, actfin)
 
@@ -481,7 +481,7 @@ function entrenar_reinforce_batch!(num_episodios, entorno, policy_model, opt, ba
         count = 0
         while !terminado
             count += 1
-            acc = count >= 100
+            acc = count >= 50
             accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines)
             estado_siguiente, recompensa, terminado = step!(entorno, accion, caseStudyData, acc)
             push!(estados_epi, estado)
@@ -689,7 +689,7 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
     nlines = caseStudyData["nlines"]
     while !terminado 
         count += 1
-        acc = count >= 100
+        acc = count >= 50
         accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines, stocas=stocástico)
 
         # Paso en el entorno
