@@ -65,7 +65,7 @@ function idx_to_state(
 end
 
 function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
-    FO = 10.0^39
+    FO = 1e4
     feas = true 
     if data["ReactiveCompesation"]
         _,FO,St,_,cty = ACOPF_Extensions.solve_tnep_N1_idx_rc(data,top; subgra=false)
@@ -84,8 +84,8 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
     end 
 end
 
-function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch )::Tuple{Float32,Bool,Dict}
-    FO = 10.0^39
+function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch )::Tuple{Float32,Bool,Float64}
+    FO = 1e4
     feas = true
     if data["ReactiveCompesation"]
         _,FO,St,_,ap = ACOPF_Extensions.solve_tnep_N1_rc_AP(data,top; subgra=false)
@@ -131,7 +131,7 @@ function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyD
     _,_,estado = eval_cty_tnep(caseStudyData, topologia)
     estado_inicial = idx_to_state(estado, num_candidatos*Stage, Stage, caseStudyData)
 
-    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 10e39, 0.0, nothing,1.0,vk,vs, 10e39, 0.0)
+    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e4, 0.0, nothing,1.0,vk,vs, 1e4, 0.0)
 end
 
 function reset!(entorno::RedElectricaEntorno, caseStudyData)
