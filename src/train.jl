@@ -64,11 +64,11 @@ end
 
 function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool, path::String;
     kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
-    hidden1=64, hidden2=32,
-    episodes = 100)
+    hidden1=144, hidden2=24,
+    episodes = 100, best_NN = nothing)
     caseStudyData = prepare_case(system, rc, n1)
     correr_experimentos_trained_pmap(path, caseStudyData, kl_um,βmax, βmin, a_beta,
-                                    hidden1, hidden2, episodes)
+                                    hidden1, hidden2, episodes, best_NN)
 end
 
 
@@ -96,30 +96,47 @@ function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax,
     
 end 
 
-function wrapper_pmap(args)
-    parametros_test, semilla, policy_model = args
-    return wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, policy = policy_model)
-end
-
 function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, episodes)
+    hidden1, hidden2, episodes, best_NN)
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
 
     folder = dirname(path_archivo)
 
     open(path_archivo, "r") do archivo
-        for (id, filename) in enumerate(eachline(archivo))
-            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
-            p1,p2,p3,p4,p5,_ = params
-            new_param = (p1,p2,p3,p4,p5,episodes)
-            push!(trabajos, (new_param, semilla, policy_model, network) )
+
+        filenames = collect(eachline(archivo))
+        models = Vector{NamedTuple}(undef, length(filenames))
+
+        for (i, filename) in enumerate(filenames)
+            @load joinpath(folder, filename) policy_model params semilla network
+            models[i] = (
+                policy = policy_model,
+                params  = params,
+                semilla = semilla,
+                network = network
+            )
+        end
+        best_policy =
+        if isnothing(best_NN)
+            nothing
+        else
+            idx = findfirst(m -> m.network == best_NN, models)
+            isnothing(idx) && error("best_NN not found in loaded models")
+            deepcopy(models[idx].policy)
+        end
+        for m in models
+            p1, p2, p3, p4, p5, _ = m.params
+            new_param = (p1, p2, p3, p4, p5, episodes)
+
+            policy_to_use = isnothing(best_policy) ? m.policy : best_policy
+
+            push!(trabajos, (new_param, m.semilla, policy_to_use, m.network))
         end
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model, network)
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, network, policy = policy_model)
+        hidden1, hidden2, network, policy = policy_model)
     end
 end  
 
