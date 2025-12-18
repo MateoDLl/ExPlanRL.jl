@@ -212,7 +212,7 @@ function step!(entorno::RedElectricaEntorno, accion::CartesianIndex, caseStudyDa
     return (estado_siguiente, recompensa, terminal, new_best, FO)
 end
 
-function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, nlines; k=20, stocas=true)
+function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, nlines; k=10, stocas=true)
     q_input = hcat(estado...)  # Estado en columnas
 
     logits = vec(policy_model(q_input))
