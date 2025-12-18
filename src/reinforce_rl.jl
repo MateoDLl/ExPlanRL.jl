@@ -687,9 +687,14 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
     count = 0
     num_max = 3
     nlines = caseStudyData["nlines"]
+    if length(acciones_disp) > 150
+        max_act = 75
+    else
+        max_act = 50
+    end
     while !terminado 
         count += 1
-        acc = count >= 50
+        acc = count >= max_act
         accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines, stocas=stocástico)
 
         # Paso en el entorno
