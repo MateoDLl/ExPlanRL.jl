@@ -125,7 +125,7 @@ function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyD
     _,_,estado = eval_cty_tnep(caseStudyData, topologia)
     estado_inicial = idx_to_state(estado, num_candidatos*Stage, Stage, caseStudyData)
 
-    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e4, 0.0, nothing,1.0,vk,vs, 1e4, 0.0)
+    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e10, 0.0, nothing,1.0,vk,vs, 1e10, 0.0)
 end
 
 function reset!(entorno::RedElectricaEntorno, caseStudyData)
@@ -678,11 +678,11 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
     count = 0
     num_max = 3
     nlines = caseStudyData["nlines"]
-    if length(acciones_disp) > 150
+    #if length(acciones_disp) > 150
         max_act = 75
-    else
-        max_act = 50
-    end
+    #else
+        #max_act = 50
+    #end
     acc = false
     while !terminado && !acc 
         count += 1
