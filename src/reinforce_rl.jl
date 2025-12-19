@@ -84,26 +84,20 @@ function eval_cty_tnep(data::Dict, top::Matrix{Int})::Tuple{Float32,Bool,Dict}
     end 
 end
 
-function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch )::Tuple{Float32,Bool,Float64}
-    FO = 1e4
-    feas = true
+function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch, factor)::Tuple{Float32,Bool,Float64}
+    FO = 1e6
+    feas = false
     if data["ReactiveCompesation"]
         _,FO,St,_,ap = ACOPF_Extensions.solve_tnep_N1_rc_AP(data,top; subgra=false)
-        FO = FO - ap*1e9
-        FO = FO + ap*1e2
-        if !(Int(St) in [1 4 7 10])
-            FO = FO + 1.5*mejor_FO_batch
-        end 
-        return FO,feas,ap
     else
         _,FO,St,_,ap = ACOPF_Extensions.solve_tnep_N1_nrc_AP(data,top; subgra=false)
-        FO = FO - ap*1e9
-        FO = FO + ap*1e2
-        if !(Int(St) in [1 4 7 10])
-            FO = FO + 1.5*mejor_FO_batch
-        end 
-        return FO,feas,ap
     end 
+    FO = FO - ap*1e9
+    FO = FO + ap*1e2
+    if !(Int(St) in [1 4 7 10])
+        FO = FO + (1.5+factor)*mejor_FO_batch
+    end 
+    return FO,feas,ap
 end
 
 
@@ -167,10 +161,8 @@ function evaluar_red!(entorno, FO, feas, n_action)
     entorno.actual_FO = FO
 
     # Caso: acción inválida
-    if !feas 
-        if !n_action
-            return false, 0.0, false
-        end
+    if !feas && !n_action
+        return false, 0.0, false
     end
 
     # Si no existe aún un mejor FO global (inicio del entrenamiento)
@@ -178,7 +170,7 @@ function evaluar_red!(entorno, FO, feas, n_action)
         entorno.mejor_FO_batch = FO
         entorno.factor_batch = 1
         entorno.factor = 1
-        return true, 1.0, true
+        return feas*!n_action, 1.0, true
     end
 
     # ---------- Recompensa BASE (siempre batch-consistente) ----------
@@ -194,17 +186,15 @@ function evaluar_red!(entorno, FO, feas, n_action)
         new_best = true
     end
 
-    return true, reward, new_best
+    return feas*!n_action, reward, new_best
 end
 
 
 function step!(entorno::RedElectricaEntorno, accion::CartesianIndex, caseStudyData, n_action)
     entorno.topologia[accion] += 1
     FO,feas,estado = eval_cty_tnep(caseStudyData, entorno.topologia)
-    if !feas
-        if n_action
-            FO,feas,_ = eval_ap_tnep(caseStudyData, entorno.topologia,entorno.mejor_FO_batch )
-        end
+    if !feas && n_action
+        FO,_,_ = eval_ap_tnep(caseStudyData, entorno.topologia,entorno.mejor_FO_batch, entorno.factor_batch)
     end
     entorno.estado_actual = idx_to_state(estado, entorno.num_candidatos, caseStudyData["Stage"], caseStudyData)
     terminal, recompensa, new_best = evaluar_red!(entorno,FO,feas, n_action)
@@ -341,7 +331,8 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
         terminado = false
         total_recompensa = 0.0f0
         n_act = 0
-        while !terminado             
+        actfin = false
+        while !terminado && !actfin      
             n_act += 1
             actfin = n_act >= 50
             accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines)
@@ -692,7 +683,8 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
     else
         max_act = 50
     end
-    while !terminado 
+    acc = false
+    while !terminado && !acc 
         count += 1
         acc = count >= max_act
         accion, accion_idx = seleccionar_accion_policy(policy_model, estado, acciones_disp, nlines, stocas=stocástico)
@@ -704,7 +696,7 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
         estado = copy(estado_siguiente)
         total_recompensa += recompensa
         if length(acciones_disp) == 0
-            terminado = true
+            acc = true
         end
         if accion in acciones_disp
             deleteat!(acciones_disp, findfirst(==(accion), acciones_disp))
