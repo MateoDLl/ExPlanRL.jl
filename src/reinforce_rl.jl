@@ -402,7 +402,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             
             # Validación determinista
             entorno_test = RedElectricaEntorno(nlines, caseStudyData["Stage"], caseStudyData["vk"], caseStudyData["vs"], caseStudyData)
-            fo, _ = evaluar_red_reinforce(policy_model, entorno_test, caseStudyData)
+            fo, _, _ = evaluar_red_reinforce(policy_model, entorno_test, caseStudyData)
             push!(val_fo, fo)
             #@info("Episodio: $episodio | β: $β | FO val: $fo")
             if length(val_fo) >= ventana_val
@@ -712,5 +712,5 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
         #println("  FO: $(accion)")
     end
     #@info("Costo: $(entorno.actual_FO)") 
-    return entorno.actual_FO, entorno.topologia
+    return entorno.actual_FO, entorno.topologia, terminado
 end

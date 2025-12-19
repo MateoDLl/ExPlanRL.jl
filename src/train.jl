@@ -145,8 +145,8 @@ function evaluar_parametros(params, policy_model, nlines, Stage, caseStudyData; 
     vs = round(Int,params[2])
     
     entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseStudyData)
-    VFO, top = evaluar_red_reinforce(policy_model, entorno, caseStudyData, stocástico = sel)  
-    return VFO, top
+    VFO, top, state = evaluar_red_reinforce(policy_model, entorno, caseStudyData, stocástico = sel)  
+    return VFO, top, state
 end
 
 
@@ -184,7 +184,7 @@ function evaluar_sistemas(vec_results, sistemas, react_comps, contingens;
             nlines = caseStudyData["nlines"]
             caseStudyData["v_line_node"] = line_node(caseStudyData)
 
-            time_test = @elapsed valor, top = evaluar_parametros(
+            time_test = @elapsed valor, top, valido = evaluar_parametros(
                 sis_train[2],       # params
                 sis_train[1],       # policy_model
                 nlines,
@@ -192,12 +192,6 @@ function evaluar_sistemas(vec_results, sistemas, react_comps, contingens;
                 caseStudyData,
                 sel = sel
             )
-
-            valido = true
-            if isnothing(valor)
-                valor = sum(caseStudyData["Mat_cost"] .* top)
-                valido = false
-            end
 
             push!(vectorRes, (v1, v2, v3, round(valor, digits=2),
                               round(time_test, digits=2), top, valido))
@@ -222,7 +216,7 @@ function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingen
         nlines = caseStudyData["nlines"]
         caseStudyData["v_line_node"] = line_node(caseStudyData)
 
-        time_test = @elapsed valor, top = evaluar_parametros(
+        time_test = @elapsed valor, top, valido = evaluar_parametros(
             sis_train[2],  # params
             sis_train[1],  # policy_model
             nlines,
@@ -230,12 +224,6 @@ function evaluar_sistemas_worker(sis_train, id, sistemas, react_comps, contingen
             caseStudyData,
             sel = sel
         )
-
-        valido = true
-        if isnothing(valor)
-            valor = sum(caseStudyData["Mat_cost"] .* top)
-            valido = false
-        end
 
         push!(vectorRes, (v1, v2, v3, round(valor, digits=2),
                           round(time_test, digits=2), top, valido, id, sis_train[2]))
