@@ -679,9 +679,9 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
     num_max = 3
     nlines = caseStudyData["nlines"]
     #if length(acciones_disp) > 150
-        max_act = 75
+        #max_act = 75
     #else
-        #max_act = 50
+        max_act = 50
     #end
     acc = false
     while !terminado && !acc 
