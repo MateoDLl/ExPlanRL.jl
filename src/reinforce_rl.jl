@@ -203,7 +203,7 @@ function step!(entorno::RedElectricaEntorno, accion::CartesianIndex, caseStudyDa
 end
 
 function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, nlines; k=10, stocas=true)
-    q_input = hcat(estado...)  # Estado en columnas
+    q_input = hcat(estado...)
 
     logits = vec(policy_model(q_input))
 
@@ -211,16 +211,25 @@ function seleccionar_accion_policy(policy_model, estado, acciones_disponibles, n
 
     cand_logits = logits[cand_idx]
 
-    k_eff = min(k, length(cand_idx))
-    topk_order = partialsortperm(cand_logits, 1:k_eff, rev=true)  # indices in cand_logits
-    topk_idx = cand_idx[topk_order]                                  # map back to global indices
-    topk_logits = cand_logits[topk_order]
-
-    if stocas
-        w = exp.(topk_logits .- maximum(topk_logits))
-        accion_idx = sample(topk_idx, Weights(w))
+    if any(isnan, cand_logits) || any(isinf, cand_logits)
+        accion_idx = rand(cand_idx)
     else
-        accion_idx = topk_idx[argmax(topk_logits)]
+        k_eff = min(k, length(cand_idx))
+        topk_order = partialsortperm(cand_logits, 1:k_eff, rev = true)
+
+        topk_idx = cand_idx[topk_order]
+        topk_logits = cand_logits[topk_order]
+
+        if stocas
+            w = exp.(topk_logits .- maximum(topk_logits))
+            if any(isnan, w) || any(isinf, w) || sum(w) ≤ 0
+                accion_idx = rand(topk_idx)
+            else
+                accion_idx = sample(topk_idx, Weights(w))
+            end
+        else
+            accion_idx = topk_idx[argmax(topk_logits)]
+        end
     end
 
     col = div(accion_idx - 1, nlines) + 1
