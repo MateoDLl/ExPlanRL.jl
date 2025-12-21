@@ -710,14 +710,11 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
         if accion in acciones_disp
             deleteat!(acciones_disp, findfirst(==(accion), acciones_disp))
         end
-        # if length(acciones_disp)/size(entorno.topologia,2) > 100
-        #     if accion in acciones_disp
-        #         deleteat!(acciones_disp, findfirst(==(accion), acciones_disp))
-        #     end
-        #     num_max = 2
-        # else
-        #     num_max = 3
-        # end
+        if length(acciones_disp)/size(entorno.topologia,2) > 100
+            num_max = 2
+        else
+            num_max = 3
+        end
         #println("  FO: $(accion)")
     end
     #@info("Costo: $(entorno.actual_FO)") 
