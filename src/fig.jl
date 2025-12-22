@@ -29,7 +29,11 @@ function moving_average(data, window)
 end
 
 function plot_with_tendency(perdidas, recompensas, VFO, id, path)
-    strVFO = string(id)*"_"*string(round(Int,VFO[1]))
+
+    strVFO = string(id) * "_" * (
+    isfinite(v) ? string(round(Int, v)) :
+    isinf(v)    ? "Inf" :
+                  "NaN")
     # Parámetro de suavizado
     window_size = 5  # 
     # --- Gráfico de pérdidas ---
