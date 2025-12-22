@@ -1,5 +1,5 @@
 function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax , βmin, a_beta,
-    hidden1, hidden2, network; policy_model = nothing)
+    hidden1, hidden2, network, fac; policy_model = nothing)
 
     nlines = caseData["nlines"]
     Stage = caseData["Stage"]
@@ -26,10 +26,10 @@ function evaluar_parametros(params, semilla, caseData, timeGlobal, kl_um ,βmax 
     recompensas_episodios = Float64[]
     opt = Flux.Adam(tasa_aprendizaje)
     #opt_state = Flux.setup(opt, policy_model)
-    entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)  # candidatos
+    entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData,fac)  # candidatos
     timeTrain = @elapsed policy_model = entrenar_reinforce_batch_baseline!(nepi, entorno, policy_model_0, opt, frecuencia, γ, perdidas_por_batch, recompensas_episodios,caseData,
                                     kl_umbral = kl_um,β_max = βmax, β_min = βmin, ajuste_beta = a_beta)
-    entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData)
+    entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseData, 0.0)
     
     timestamp = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
 
@@ -54,34 +54,34 @@ end
 function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool;
     kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
     hidden1=144, hidden2=24, 
-    parameters = [[4],[4],[3 6 9],[0.005 0.01], [0.99 0.999], [500]])
+    parameters = [[4],[4],[3 6 9],[0.005 0.01], [0.99 0.999], [500]], factor = 0.0)
     @info("$(system),  N_ep: $(parameters[6])  ") 
     caseStudyData = prepare_case(system, rc, n1)
     p1,p2,p3,p4,p5,p6 = parameters
     correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax, βmin, a_beta,
-                            hidden1, hidden2)
+                            hidden1, hidden2, factor)
 end
 
 function run_rl_reinforce_train(system::String, rc::Bool, n1::Bool, path::String;
     kl_um = 0.02,βmax = 0.6, βmin = 0.01, a_beta = 0.03,
     hidden1=144, hidden2=24,
-    episodes = 100, best_NN = nothing)
+    episodes = 100, best_NN = nothing, factor = 0.0)
     caseStudyData = prepare_case(system, rc, n1)
     correr_experimentos_trained_pmap(path, caseStudyData, kl_um,βmax, βmin, a_beta,
-                                    hidden1, hidden2, episodes, best_NN)
+                                    hidden1, hidden2, episodes, best_NN, factor)
 end
 
 
 function wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, net; policy=nothing)
+    hidden1, hidden2, net, factor; policy=nothing)
     Random.seed!(semilla)
     evaluar_parametros(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, net, policy_model = policy)
+    hidden1, hidden2, net, factor, policy_model = policy)
 end
 
 
 function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2)
+    hidden1, hidden2, factor)
     seed = 1000
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
@@ -91,13 +91,13 @@ function correr_experimentos_pmap(p1,p2,p3,p4,p5,p6, caseStudyData, kl_um,βmax,
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, net) 
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-                hidden1, hidden2, net)
+                hidden1, hidden2, net, factor)
     end
     
 end 
 
 function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βmax, βmin, a_beta,
-    hidden1, hidden2, episodes, best_NN)
+    hidden1, hidden2, episodes, best_NN, factor)
     trabajos = []
     timeGlobal = Dates.format(Dates.now(), "yyyy-mm-dd_HHMMSS")
 
@@ -136,7 +136,7 @@ function correr_experimentos_trained_pmap(path_archivo, caseStudyData, kl_um,βm
     end
     Distributed.pmap(trabajos) do (parametros_test, semilla, policy_model, network)
         wrapper(parametros_test, semilla, caseStudyData, timeGlobal, kl_um,βmax, βmin, a_beta,
-        hidden1, hidden2, network, policy = policy_model)
+        hidden1, hidden2, network, factor, policy = policy_model)
     end
 end  
 
@@ -144,7 +144,7 @@ function evaluar_parametros(params, policy_model, nlines, Stage, caseStudyData; 
     vk = round(Int,params[1])
     vs = round(Int,params[2])
     
-    entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseStudyData)
+    entorno = RedElectricaEntorno(nlines, Stage, vk, vs, caseStudyData, 0.0)
     VFO, top, state = evaluar_red_reinforce(policy_model, entorno, caseStudyData, stocástico = sel)  
     return VFO, top, state
 end

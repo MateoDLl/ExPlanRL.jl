@@ -119,13 +119,13 @@ mutable struct RedElectricaEntorno
     factor_batch::Float64
 end
 
-function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyData)
+function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyData, factor)
     topologia = zeros(Int, num_candidatos, Stage)
     acciones_iniciales = vec(collect(CartesianIndices(topologia)))
     _,_,estado = eval_cty_tnep(caseStudyData, topologia)
     estado_inicial = idx_to_state(estado, num_candidatos*Stage, Stage, caseStudyData)
 
-    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e10, 0.0, nothing,1.0,vk,vs, 1e10, 0.0)
+    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e40, factor, nothing,1.0,vk,vs, 1e40, 0.0)
 end
 
 function reset!(entorno::RedElectricaEntorno, caseStudyData)
@@ -364,7 +364,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
         retornos = calcular_retorno(recompensas_epi, γ)
         baseline = mean(retornos)
         ventajas = retornos .- baseline
-        ventajas = (ventajas .- mean(ventajas)) ./ (std(ventajas) + 1e-6)
+        ventajas = (ventajas .- mean(ventajas)) ./ (std(ventajas) + 1e-8)
 
         append!(buffer_ventajas, ventajas)
         append!(buffer_estados, estados_epi)
@@ -410,7 +410,7 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
             push!(perdidas_por_batch, loss_val)
             
             # Validación determinista
-            entorno_test = RedElectricaEntorno(nlines, caseStudyData["Stage"], caseStudyData["vk"], caseStudyData["vs"], caseStudyData)
+            entorno_test = RedElectricaEntorno(nlines, caseStudyData["Stage"], caseStudyData["vk"], caseStudyData["vs"], caseStudyData, 0.0)
             fo, _, _ = evaluar_red_reinforce(policy_model, entorno_test, caseStudyData)
             push!(val_fo, fo)
             #@info("Episodio: $episodio | β: $β | FO val: $fo")
@@ -436,12 +436,12 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
                 best_batch = minimum(best_candidates)
 
                 if isnothing(entorno.mejor_FO) || best_batch < entorno.mejor_FO
-                    mejora_relativa = (entorno.mejor_FO - best_batch) / abs(entorno.mejor_FO)
-
                     entorno.mejor_FO = best_batch
-
-                    # Incremento suave del factor (no discreto)
-                    entorno.factor += min(length(best_candidates),2)
+                    if length(entorno_test.acciones) > 100
+                        entorno.factor += 3
+                    else
+                        entorno.factor += min(length(best_candidates),2)
+                    end
                 end
             end
             entorno.mejor_FO_batch = entorno.mejor_FO
