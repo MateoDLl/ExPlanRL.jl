@@ -31,8 +31,8 @@ end
 function plot_with_tendency(perdidas, recompensas, VFO, id, path)
 
     strVFO = string(id) * "_" * (
-    isfinite(VFO) ? string(round(Int, VFO)) :
-    isinf(VFO)    ? "Inf" :
+    isfinite(VFO[1]) ? string(round(Int, VFO[1])) :
+    isinf(VFO[1])    ? "Inf" :
                   "NaN")
     # Parámetro de suavizado
     window_size = 5  # 
