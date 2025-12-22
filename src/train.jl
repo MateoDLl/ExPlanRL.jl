@@ -158,8 +158,8 @@ function cargar_modelos(path_archivo, vec_idd)
 
     open(path_archivo, "r") do archivo
         for (id, filename) in enumerate(eachline(archivo))
-            if id in vec_idd
-                @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
+            @load joinpath(folder, filename) policy_model timeTrain params nepi perdidas_por_batch VFO semilla recompensas_episodios network
+            if network in vec_idd
                 push!(vec_names, filename)
                 push!(vec_results, (policy_model, params, perdidas_por_batch, recompensas_episodios, VFO))
                 push!(vec_id, network)
