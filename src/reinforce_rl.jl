@@ -689,7 +689,7 @@ function evaluar_red_reinforce(policy_model, entorno::RedElectricaEntorno, caseS
     nlines = caseStudyData["nlines"]
     max_act = 50
     acc = false
-    entorno.mejor_FO_batch = 0.0
+    entorno.mejor_FO_batch = 1000.0
     while !terminado && !acc 
         count += 1
         acc = count >= max_act
