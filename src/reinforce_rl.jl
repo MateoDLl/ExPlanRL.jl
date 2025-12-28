@@ -170,7 +170,7 @@ function evaluar_red!(entorno, FO, feas, n_action)
         entorno.mejor_FO_batch = FO
         entorno.factor_batch = 1
         entorno.factor = 1
-        return feas*!n_action, 1.0, true
+        return feas, 1.0, true
     end
 
     # ---------- Recompensa BASE (siempre batch-consistente) ----------
@@ -186,7 +186,7 @@ function evaluar_red!(entorno, FO, feas, n_action)
         new_best = true
     end
 
-    return feas*!n_action, reward, new_best
+    return feas, reward, new_best
 end
 
 
