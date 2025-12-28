@@ -125,7 +125,7 @@ function RedElectricaEntorno(num_candidatos::Int, Stage::Int, vk, vs, caseStudyD
     _,_,estado = eval_cty_tnep(caseStudyData, topologia)
     estado_inicial = idx_to_state(estado, num_candidatos*Stage, Stage, caseStudyData)
 
-    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e18, factor, nothing,1.0,vk,vs, 1e18, 0.0)
+    return RedElectricaEntorno(num_candidatos*Stage, estado_inicial, acciones_iniciales, topologia, 1e18, factor, nothing,1.0,vk,vs, nothing, 0.0)
 end
 
 function reset!(entorno::RedElectricaEntorno, caseStudyData)
@@ -307,7 +307,7 @@ end
 # --- Entrenamiento con REINFORCE ---
 function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model, opt, batch_size, γ, 
     perdidas_por_batch, recompensas_por_episodios, caseStudyData;
-    kl_umbral = 0.02,β_max = 0.6, β_min = 0.01, ajuste_beta = 0.03)
+    kl_umbral = 0.02,β_max = 0.6, β_min = 0.01, ajuste_beta = 0.03, best_prev = nothing)
     opt_state = Flux.setup(opt, policy_model)
     nlines =caseStudyData["nlines"]
     buffer_estados = []
@@ -324,10 +324,13 @@ function entrenar_reinforce_batch_baseline!(num_episodios, entorno, policy_model
    
     ventana_val = 5
     val_fo = Float32[]
-    best_val_fo = Inf
+    if isnothing(best_prev)
+        best_val_fo = Inf
+    else
+        best_val_fo = best_prev
+    end
     best_model = deepcopy(policy_model) 
     best_candidates = []
-    best_global = 10e29
 
     while episodio < num_episodios
         estado = reset!(entorno, caseStudyData)
