@@ -87,6 +87,11 @@ end
 function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch, factor)::Tuple{Float32,Bool,Float64}
     FO = 1e6
     feas = false
+    if isnothing(mejor_FO_batch)
+        penalty = 1e6
+    else
+        penalty = mejor_FO_batch
+    end
     if data["ReactiveCompesation"]
         _,FO,St,_,ap = ACOPF_Extensions.solve_tnep_N1_rc_AP(data,top; subgra=false)
     else
@@ -95,7 +100,7 @@ function eval_ap_tnep(data::Dict, top::Matrix{Int},mejor_FO_batch, factor)::Tupl
     FO = FO - ap*1e9
     FO = FO + ap*1e2
     if !(Int(St) in [1 4 7 10])
-        FO = FO + (1.5+factor)*mejor_FO_batch
+        FO = FO + (1.5+factor)*penalty
     end 
     return FO,feas,ap
 end
